@@ -21,16 +21,6 @@ namespace IngameScript
 {
     partial class Ship_Main : MyGridProgram
     {   
-        public Ship_Main()
-        {
-            //auto runs the script without the need for a timer block
-            Runtime.UpdateFrequency = UpdateFrequency.Once | UpdateFrequency.Update100;
-            //still testing if 100 ticks are the correct timing
-            //Note: this might not be appropriate for the refinery/assembly management program since we're going 
-            //to wait a lot more than 100 ticks to update them (15 minutes at the least), but should be appropriate
-            //a ship cargo update script
-        }
-
         //Determines whether a block belongs to the same grid as the programming block calling it or not
         private bool isLocalGrid(IMyTerminalBlock block)
         {
@@ -88,13 +78,44 @@ namespace IngameScript
         }
 
 
-        private void printType(string LCD_Name, string printType)
+        private void printGroupInLCD(string vfLCD_Name, cargoClass data, string vfType = "", int itemsPerLine = 1, bool vfKeepCurrentMsg = false)
         {
-            // to my ABSOLUTE dismay, I can't use local functions in SE due to it not accepting C 7.0
+            // to my ABSOLUTE dismay, I can't use local functions in SE due to it not accepting C# 7.0
+            IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName(vfLCD_Name) as IMyTextPanel;
+            if (vlLCD != null)
+            {
+                string vlMSG = "";
+                int vlI = 0;
+                if (data.cargoLst.MaterialQuantity.Any(m => m.Item1 == vfType) && data.cargoLst.MaterialQuantity.Count > 0) // Checks if it does have that type, otherwise no point in continuing
+                {
+                    foreach (MyTuple<string, string, float> line in data.cargoLst.MaterialQuantity)
+                    {
+                        //Cycles through the list and builds up a message with only the permitted items and in the specified conditions
+                        if (vfType == line.Item1 || vfType == "")
+                        {
+                            vlMSG = vlMSG + string.Format(" {0}: #{1}", line.Item2, line.Item3);
+                            vlMSG = (vlI % itemsPerLine != 0) ? vlMSG + "\n" : vlMSG + " | ";
+                            vlI++;
+                        }
+                    }
+                    if (vlMSG != "")
+                    {
+                        //prints the message into the specified LCD keeping the previous message or not, depending on vfKeepCurrentMsg
+                        vlLCD.WriteText(vlMSG, vfKeepCurrentMsg);   
+                    }
+                }
+            }
         }
-        private void printCargo(string LCD_Name)
+
+        //This isn't strictly necessary, but since some of the fellows that are going to use this aren't programmers, might as well make it easier for them
+        private void printItemType(string vfLCD_Name, cargoClass data, string vfType, bool vfKeepCurrentMsg = false, int itemsPerLine = 1)
         {
-            //Did I meantion how dismayed I am for not being able to tuck this away as a local function? Well, I am...
+            printGroupInLCD(vfLCD_Name, data, vfType, itemsPerLine, vfKeepCurrentMsg);
+        }
+
+        private void printItemAll(string vfLCD_Name, cargoClass data, bool vfKeepCurrentMsg = false, int itemsPerLine = 1)
+        {
+            printGroupInLCD(vfLCD_Name, data, "", itemsPerLine, vfKeepCurrentMsg);
         }
 
         public void Main(string argument, UpdateType updateSource)
@@ -102,8 +123,6 @@ namespace IngameScript
             //Vital code. DO NOT TOUCH!
             cargoClass vlCargo = new cargoClass();  //Technically, this could have been a static, but I may want to group different cargos separately
 
-
-            //
             //Non Vital code. Change as needed.
             //Options are: "Container", "Connector", "Drill", "Welder", "Grinder", "Reactor" and "O2Generator"
             //Incorrect naming or empty parameter groups all cargo together
@@ -121,6 +140,17 @@ namespace IngameScript
             vlReactor.getCargoCount(cargoType("Reactor"));
             cargoClass vlTool = new cargoClass();
             vlTool.getCargoCount(cargoType("Drill"));
+
+
+            //testing stuff
+            printItemAll("LCD", vlCargo);
+            //printInLCD("LCD", vlCargo);
+            IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName("LCD") as IMyTextPanel;
+            foreach (long item in vlCargo.TEST)
+            {
+                vlLCD.WriteText(item.ToString(), true);
+            }
+            
         }
     }
 }

@@ -21,22 +21,18 @@ namespace IngameScript
 {
     partial class Ship_Main
     {
-        public class cargoClass
+        public class cargoClass : MyGridProgram
         {
             //contains every information about the cargos, what items they have, in what cargo id, what quantities 
             //and in what position of the cargo array, for easier transfer, if needed.
-            public class individualCargo
+            public class individualCargo : MyGridProgram
             {
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
-                public Dictionary<string, float> MaterialQuantity = new Dictionary<string, float>();
-                public List<double> ID = new List<double>();
-                public List<double> FreeVolume = new List<double>();
-                public List<List<MyTuple<string, string, string, double, int>>> MaterialList = new List<List<MyTuple<string, string, string, double, int>>>();
-                //Edit: Tried to make it this way but failed. Opted for the more reasonable way out. 
-                //This monstrosity of a list is the empirical proof that I am absolutely insane. I see no reason not to use this in this fashion =D
-                //public List<MyTuple<double, double, List<MyTuple<string, string, string, double, int>>>> MaterialList = new List<MyTuple<double, double, List<MyTuple<string, string, string, double, int>>>> ();
-                //Damn C# rigidity!!!! I did this with python in 15 minutes!!!!
-
+                public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
+                public List<long> ID = new List<long>();
+                public List<MyFixedPoint> FreeVolume = new List<MyFixedPoint>();
+                //SubType, Type, quantity, totalVolume, position, volume of 1 item
+                public List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> MaterialList = new List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>>();
                 //I'm sorely lacking in encapsulation quality, but... one step at a time. Still... not bad for 2 day's work
 
                 public individualCargo()
@@ -48,18 +44,18 @@ namespace IngameScript
                 }
 
                 //adds items to the cargo list in a controlled fashion. Serves for transfering
-                public void addItem(double vfID, string vfName, string vfType, string vfSubType, double vfQuant, int vfPos, double vfFreespace)
+                public void addItem(long vfID, MyFixedPoint vfFreespace, string vfType, string vfSubType, VRage.MyFixedPoint vfQuant, int vfPos)
                 {
-                    // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MAterialList[10]
+                    // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MaterialList[10]
                     //To achieve this, items can only be added in this method.
-                    MyTuple<string, string, string, double, int> vlNewMats = new MyTuple<string, string, string, double, int>(vfName, vfType, vfSubType, vfQuant, vfPos);
+                    MyTuple<string, string, VRage.MyFixedPoint, int> vlNewMats = new MyTuple<string, string, VRage.MyFixedPoint, int>( vfType, vfSubType, vfQuant, vfPos);
                     //check if id in question exists.
                     if (!ID.Contains(vfID))
                     {
                         //it does not, so create. 
                         ID.Add(vfID);
                         FreeVolume.Add(vfFreespace);
-                        List<MyTuple<string, string, string, double, int>> listTMP = new List<MyTuple<string, string, string, double, int>>();
+                        List<MyTuple<string, string, VRage.MyFixedPoint, int>> listTMP = new List<MyTuple<string, string, VRage.MyFixedPoint, int>>();
                         listTMP.Add(vlNewMats);
                         MaterialList.Add(listTMP);
                     }
@@ -68,7 +64,7 @@ namespace IngameScript
                         //it does, so increment materials to id position. No need to add or change Id or freespace, since they're the same until a transfer
                         int vlIndex = ID.IndexOf(vfID);
                         //checks if the current SubType already exists in this ID
-                        List<MyTuple<string, string, string, double, int>> vlInnerList = MaterialList[vlIndex];
+                        List<MyTuple<string, string, VRage.MyFixedPoint, int>> vlInnerList = MaterialList[vlIndex]; //PM????
                         //it does not, so create
                         vlInnerList.Add(vlNewMats);
                         //Then replace the old list with the new 
@@ -76,20 +72,38 @@ namespace IngameScript
                         //Note that this system does not increment the quantity of the same material. It lists it so it is easier to access it for transfer
                         //An increment is made, but it is made on the same method that calls this one.
                     }
+                    addQuantities(vfSubType, vfType, (float)vfQuant);
                 }
 
                 //adds items to the quantity list in a controlled fashion. Serves for printing info
-                public void addQuantities(string vfKey, float vfQuantity)
+                public void addQuantities(string vfSubType, string vfType, float vfQuantity)
                 {
-
+                    bool vlFoundItem = false;
+                    int vlI = 0;
+                    if (MaterialQuantity.Count > 0) // Checks if it does have that type, otherwise no point in continuing
+                    {
+                        foreach (MyTuple<string, string, float> line in MaterialQuantity)
+                        {
+                            if (line.Item1 == vfType && line.Item2 == vfSubType)
+                            {
+                                float vlTMP = line.Item3 + vfQuantity;
+                                MaterialQuantity[vlI] = MyTuple.Create(vfType, vfSubType, vlTMP);
+                                if (!vlFoundItem) { vlFoundItem = true; }
+                            }
+                            vlI++;
+                        }
+                    }
                 }
             }
 
             //Declare initial variables. Note that refineries and assemblies don't need this flag because they'll be managed in another way
             private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector = false;
-            public float CurrentVolume, TotalVolume, CargoRacio, Count = 0;
+            public MyFixedPoint CurrentVolume, TotalVolume = 0;
+            public float CargoRacio = 0;
+            public int Count = 0;
             public individualCargo cargoLst = new individualCargo();
 
+            public List<long> TEST = new List<long>();
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
@@ -109,20 +123,20 @@ namespace IngameScript
                 return (total == 0) ? 0 : value / total * 100;
             }
 
-            private bool foundItemInInventory(MyInventoryItem vfInventory, string vfSubType = "All", string vfType = "All")
+            private bool foundItemInInventory(MyInventoryItem vfInventory, List<string> vfType, string vfSubType = "All")
             {
                 bool vlTMP = false;
                 //I could do this with less conditions but this way it's easier to understand
                 if ((vfSubType != "All" && vfInventory.Type.SubtypeId.ToString() == vfSubType)
-                    || (vfType != "All" && vfSubType == "All" && vfInventory.Type.TypeId.ToString().EndsWith(vfType))
-                    || (vfType == "All" && vfSubType == "All"))
+                    || (vfType[0] != "All" && vfSubType == "All" && vfType.Any())
+                    || (vfType[0] == "All" && vfSubType == "All"))
                 {
                     //if the item in this slot corresponds to a specific subtype, you can pass it
                     //if the item in this slot corresponds to a specific type, you can pass it regardless of subtype
                     //all items found can be passed
                     vlTMP = true;
                 }
-                return true;
+                return vlTMP;
             }
 
             //checks if this cargo type has already been searched through
@@ -244,28 +258,30 @@ namespace IngameScript
             }
 
             //Cycles through the inventory to catalog the requested items
-            private void searchInventory(IMyInventory vfCargo, string vfSubType = "All", string vfType = "All")
+            private void searchInventory(IMyTerminalBlock vfCargo, List<string> vfType = "All", string vfSubType = "All")
             {
-                var vlItemLst = fillListFromInventory(vfCargo);
-                //each vlI corresponds to a slot in the inventory. items may be divided into different stacks 
-                //despite being the same component type and subtype
-                for (int vlI = 0; vlI < vlItemLst.Count; vlI++)
+                if ((vfCargo.IsFunctional == true))
                 {
-                    //check if the item in question is within the search parametres
-                    if (foundItemInInventory(vlItemLst[vlI], vfSubType, vfType))
+                    IMyInventory vlInventory = vfCargo.GetInventory(0);
+                    TotalVolume += vlInventory.MaxVolume;
+                    CurrentVolume += vlInventory.CurrentVolume;
+                    MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;
+                    var vlItemLst = fillListFromInventory(vlInventory);
+                    //each vlI corresponds to a slot in the inventory. items may be divided into different stacks 
+                    //despite being the same component type and subtype
+                    for (int vlI = 0; vlI < vlItemLst.Count; vlI++)
                     {
-                        //There is a print name and the SE item code. The first is the name we want to print in the LCD (if we want to print it)
-                        //and the other is the name the game recognizes and we use to search the inventories
-                        var vlItemFoundLst = new MyTuple<string, string, string, double, int>(cFromSE_Key(vfSubType, vfType),
-                            vfType, vfSubType, vlItemLst[vlI].Amount.ToIntSafe(), vlI);
-                        //vfInventory.Type.TypeId.ToString().EndsWith(vfType))
-                        //vfInventory.Type.SubtypeId.ToString() == vfSubType
+                        //check if the item in question is within the search parametres
+                        if (foundItemInInventory(vlItemLst[vlI], vfType, vfSubType))
+                        {
+                            cargoLst.addItem(vfCargo.GetId(), vlFreeSpace, vlItemLst[vlI].Type.TypeId.ToString(), vlItemLst[vlI].Type.SubtypeId.ToString(), vlItemLst[vlI].Amount, vlI);
+                        }
                     }
                 }
-                //Note that this will be added even if no mats are found in the inventory. The tuple will just be empty
             }
 
             //I could probably do all in one single function without dificulty, but it would probably be more complicated if someone wants to pick this up
+            //... namely me, after months or years without touching this
             private void listAllMaterialsByType(IMyInventory vfCargo, string vfType = "All")
             {
                 //Types are: Ores, Ingots, Components, Tools, Ammo
@@ -288,11 +304,24 @@ namespace IngameScript
                 return itemInv;
             }
 
+            //Turns a bool group into a list of item types. I could have done this directly, but I judged it would be easier for a non programmer to use "getCargoCount" with booleans
+            private List<string> buildTypeArray(bool vfComp = false, bool vfOres = false, bool vfIngots = false, bool vfTools = false, bool vfAmmo = false)
+            {
+                List<string> vlTMP = new List<string>();
+                if (vfComp) { vlTMP.Add("Component"); }
+                if (vfOres) { vlTMP.Add("Ore"); }
+                if (vfIngots) { vlTMP.Add("Ingot"); }
+                if (vfTools) { vlTMP.Add("Tool"); }
+                if (vfAmmo) { vlTMP.Add("Ammo"); }
+                if (!vfComp && !vfOres && !vfIngots && !vfTools && !vfAmmo) { vlTMP.Add("All"); }
+                return vlTMP;
+            }
 
             //Makes the class search the designated cargo type in search of the requested type.
             //DOES NOT HANDLE REFINERIES OR ASSEMBLIES!! That's in another place
             public void getCargoCount(List<IMyTerminalBlock> vfBlockLst, bool vfComp = false, bool vfOres = false, bool vfIngots = false, bool vfTools = false, bool vfAmmo = false) //Every basic cargo container. Small, Medium or Large
             {
+                List<string> vlTypeLst = buildTypeArray(vfComp, vfOres, vfIngots, vfTools, vfAmmo);
                 //No point trying to do anything if list is empty, found an error or already searched this cargo type.
                 if (null != vfBlockLst && vfBlockLst.Count != 0 && !impCargo)
                 {
@@ -301,28 +330,16 @@ namespace IngameScript
                         markAsRepeated(vfBlockLst[0].GetType());
                         for (int vlI = 0; vlI < vfBlockLst.Count; vlI++)
                         {
-                            //Checks if the blocks are functional/complete. Only includes in calculation if true
-                            //Use countItem for specific items, use getInvList for full list of a category of items
-                            if ((vfBlockLst[vlI].IsFunctional == true))
-                            {
-                                IMyInventory vlInventory = vfBlockLst[vlI].GetInventory(0);
-                                TotalVolume += (float)vlInventory.MaxVolume;
-                                CurrentVolume += (float)vlInventory.CurrentVolume;
-                                Count += 1;
+                            //searches each individual inventory block for the required items
+                            searchInventory(vfBlockLst[vlI], vlTypeLst);
 
-                                //cargoLst.addItem(vfBlockLst[vlI].EntityId, )
+                            /*Here we debate with the same ancient question: elegance or effectiveness? use this opportunity to gather 
+                            info about blocks that besides cargo have other important data or keep things clean and simple at the cost of
+                            multiple cycles through the same block? When both can me used, use both, when only one is available, I always choose 
+                            effectiveness unless otherwise instructed*/
 
-                                /*Here we debate with the same ancient question: elegance or effectiveness? use this opportunity to gather 
-                                info about blocks that besides cargo have other important data or keep things clean and simple at the cost of
-                                multiple cycles through the same block? When both can me used, use both, when only one is available, I always choose 
-                                effectiveness unless otherwise instructed*/
-
-
-
-
-                            }
                         }
-                        CargoRacio = calcPercentage(CurrentVolume, TotalVolume);
+                        CargoRacio = calcPercentage((float)CurrentVolume, (float)TotalVolume);
                     }
                 }
             }

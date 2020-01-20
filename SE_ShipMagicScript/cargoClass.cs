@@ -19,7 +19,7 @@ using VRageMath;
 
 namespace IngameScript
 {
-    partial class Program
+    partial class Ship_Main
     {
         public class cargoClass
         {

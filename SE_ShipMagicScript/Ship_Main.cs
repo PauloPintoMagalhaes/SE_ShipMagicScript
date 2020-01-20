@@ -20,20 +20,7 @@ using VRageMath;
 namespace IngameScript
 {
     partial class Ship_Main : MyGridProgram
-    {
-        /************************************************************************************************************
-        *                                   Space Engineers Ship Magic Script                                       *
-        *                   Made by Paulo Magalhães aka Skaer aka MangaYuurei aka Ghost of Magellan                 *
-        *************************************************************************************************************                   
-        *                                                   Purpose                                                 *
-        *              Create assistance scripts for Space Engineers ships and learn C# in the process              *   
-        *   One script runs in every ship. User only requires to configure the "Main" according to the need even    *
-        *   without programming knowledge. Just follow the instructions and keep the "Vital" section of the main    *
-        *   undisturbed and you'll be just fine. If you're a programmer, this might be interesting for you:         *
-        *   https://github.com/malware-dev/MDK-SE/wiki/Quick-Introduction-to-Space-Engineers-Ingame-Scripts         *
-        *                                                                                                           *
-        ************************************************************************************************************/
-
+    {   
         public Ship_Main()
         {
             //auto runs the script without the need for a timer block
@@ -103,7 +90,7 @@ namespace IngameScript
 
         private void printType(string LCD_Name, string printType)
         {
-            // to my ABSOLUTE dismay, I can't use local functions in SE due to it not accepting C# 7.0
+            // to my ABSOLUTE dismay, I can't use local functions in SE due to it not accepting C 7.0
         }
         private void printCargo(string LCD_Name)
         {
@@ -116,7 +103,7 @@ namespace IngameScript
             cargoClass vlCargo = new cargoClass();  //Technically, this could have been a static, but I may want to group different cargos separately
 
 
-            //**************************************
+            //
             //Non Vital code. Change as needed.
             //Options are: "Container", "Connector", "Drill", "Welder", "Grinder", "Reactor" and "O2Generator"
             //Incorrect naming or empty parameter groups all cargo together
@@ -127,7 +114,7 @@ namespace IngameScript
             //you can also call a different cargo type into the same group and it will sum the mats into the same variable
             //vlCargo.getCargoCount(cargoType("Container"));
             //vlCargo.getCargoCount(cargoType("Connector"));
-            //**************************************
+            //
             vlCargo.getCargoCount(cargoType("Container"));  //Already declared above
             vlCargo.getCargoCount(cargoType("Connector"));  //Note that Ejectors count as connectors too
             cargoClass vlReactor = new cargoClass();

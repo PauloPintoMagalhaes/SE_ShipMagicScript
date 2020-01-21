@@ -21,11 +21,11 @@ namespace IngameScript
 {
     partial class Ship_Main
     {
-        public class cargoClass : MyGridProgram
+        public class cargoClass
         {
             //contains every information about the cargos, what items they have, in what cargo id, what quantities 
             //and in what position of the cargo array, for easier transfer, if needed.
-            public class individualCargo : MyGridProgram
+            public class individualCargo 
             {
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
                 public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
@@ -49,7 +49,7 @@ namespace IngameScript
                     // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MaterialList[10]
                     //To achieve this, items can only be added in this method.
                     MyTuple<string, string, VRage.MyFixedPoint, int> vlNewMats = new MyTuple<string, string, VRage.MyFixedPoint, int>( vfType, vfSubType, vfQuant, vfPos);
-                    //check if id in question exists.
+                        //check if id in question exists.
                     if (!ID.Contains(vfID))
                     {
                         //it does not, so create. 
@@ -78,20 +78,17 @@ namespace IngameScript
                 //adds items to the quantity list in a controlled fashion. Serves for printing info
                 public void addQuantities(string vfSubType, string vfType, float vfQuantity)
                 {
-                    bool vlFoundItem = false;
-                    int vlI = 0;
-                    if (MaterialQuantity.Count > 0) // Checks if it does have that type, otherwise no point in continuing
+                    int vlIndex = MaterialQuantity.FindIndex(a => a.Item1 == vfType && a.Item2 == vfSubType); // Checks if it does have that type, otherwise no point in continuing
+                    if (vlIndex >= 0) 
                     {
-                        foreach (MyTuple<string, string, float> line in MaterialQuantity)
-                        {
-                            if (line.Item1 == vfType && line.Item2 == vfSubType)
-                            {
-                                float vlTMP = line.Item3 + vfQuantity;
-                                MaterialQuantity[vlI] = MyTuple.Create(vfType, vfSubType, vlTMP);
-                                if (!vlFoundItem) { vlFoundItem = true; }
-                            }
-                            vlI++;
-                        }
+                        //Found the item in question. increment
+                        MyTuple<string, string, float> vlTMP = MaterialQuantity[vlIndex];
+                        MaterialQuantity[vlIndex] = MyTuple.Create(vlTMP.Item1, vlTMP.Item2, vlTMP.Item3 + vfQuantity);
+                    }
+                    else //returns -1 if not found
+                    {
+                        //Didn't find the item in question. adds
+                        MaterialQuantity.Add(MyTuple.Create(vfType, vfSubType, vfQuantity));
                     }
                 }
             }
@@ -103,7 +100,8 @@ namespace IngameScript
             public int Count = 0;
             public individualCargo cargoLst = new individualCargo();
 
-            public List<long> TEST = new List<long>();
+            public List<string> TEST = new List<string>();
+            public List<string> TEST1 = new List<string>();
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
@@ -128,7 +126,7 @@ namespace IngameScript
                 bool vlTMP = false;
                 //I could do this with less conditions but this way it's easier to understand
                 if ((vfSubType != "All" && vfInventory.Type.SubtypeId.ToString() == vfSubType)
-                    || (vfType[0] != "All" && vfSubType == "All" && vfType.Any())
+                    || (vfType[0] != "All" && vfSubType == "All" && vfType.Contains(vfInventory.Type.TypeId.ToString()))
                     || (vfType[0] == "All" && vfSubType == "All"))
                 {
                     //if the item in this slot corresponds to a specific subtype, you can pass it
@@ -178,13 +176,14 @@ namespace IngameScript
                 string SE_Type = "";
                 string SE_SubType = "";
                 //Determines Type
-                if (components.Any(thisItem.Contains)) { SE_Type = "Component"; }
-                else if (ores.Any(thisItem.Contains)) { SE_Type = "Ore"; }
-                else if (ingots.Any(thisItem.Contains)) { SE_Type = "Ing"; }
-                else if (tools.Any(thisItem.Contains)) { SE_Type = "PhysicalGunObject"; }
-                else if (ammo.Any(thisItem.Contains)) { SE_Type = "AmmoMagazine"; }
-                else if (thisItem == "OxygenBottle") { SE_Type = "OxygenContainerObject"; }
-                else if (thisItem == "HydrogenBottle") { SE_Type = "GasContainerObject"; }
+                if (components.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Component"; }
+                else if (ores.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ore"; }
+                else if (ingots.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ingot"; }
+                else if (tools.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_PhysicalGunObject"; }
+                else if (ammo.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_AmmoMagazine"; }
+                else if (thisItem == "OxygenBottle") { SE_Type = "MyObjectBuilder_OxygenContainerObject"; }
+                else if (thisItem == "HydrogenBottle") { SE_Type = "MyObjectBuilder_GasContainerObject"; }
+                else if (thisItem == "ClankCola") { SE_Type = "MyObjectBuilder_ConsumableItem"; }
                 else { SE_Type = ""; }
                 //Determines SubType
                 if (thisItem == "Glass") { SE_SubType = "BulletproofGlass"; }
@@ -218,17 +217,20 @@ namespace IngameScript
             {
                 string nonSE_Name = "";
                 //Don't know who had the bright idea to name different items with the same subtype. Makes things unnecessarily hard
-                if (Type == "Ore" || Type == "Ingot")
+                if (Type == "MyObjectBuilder_Ore" || Type == "MyObjectBuilder_Ingot")
                 {
                     if (SE_SubType == "Ice" || SE_SubType == "Stone" || SE_SubType == "Gravel")
                     {
-                        nonSE_Name = SE_SubType;
+                        nonSE_Name = "MyObjectBuilder_Ore";
                     }
                     else
                     {
-                        string vlNewType = (Type == "Ore") ? "Ore" : "Ing";
-                        nonSE_Name = SE_SubType + " " + Type;
+                        string vlNewType = (Type == "MyObjectBuilder_Ore") ? "Ore" : "Ing";
+                        nonSE_Name = SE_SubType + " " + vlNewType;
                     }
+                }else if (SE_SubType == "ClangCola")
+                {
+                    nonSE_Name = "Clang Cola";
                 }
                 else
                 {
@@ -258,7 +260,7 @@ namespace IngameScript
             }
 
             //Cycles through the inventory to catalog the requested items
-            private void searchInventory(IMyTerminalBlock vfCargo, List<string> vfType = "All", string vfSubType = "All")
+            private void searchInventory(IMyTerminalBlock vfCargo, List<string> vfType, string vfSubType = "All")
             {
                 if ((vfCargo.IsFunctional == true))
                 {
@@ -266,9 +268,11 @@ namespace IngameScript
                     TotalVolume += vlInventory.MaxVolume;
                     CurrentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;
+                    Count++;
                     var vlItemLst = fillListFromInventory(vlInventory);
                     //each vlI corresponds to a slot in the inventory. items may be divided into different stacks 
                     //despite being the same component type and subtype
+                    
                     for (int vlI = 0; vlI < vlItemLst.Count; vlI++)
                     {
                         //check if the item in question is within the search parametres

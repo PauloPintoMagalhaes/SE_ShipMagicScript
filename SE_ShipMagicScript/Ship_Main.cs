@@ -77,7 +77,6 @@ namespace IngameScript
             return vlCargoList;
         }
 
-
         private void printGroupInLCD(string vfLCD_Name, cargoClass data, string vfType = "", int itemsPerLine = 1, bool vfKeepCurrentMsg = false)
         {
             // to my ABSOLUTE dismay, I can't use local functions in SE due to it not accepting C# 7.0
@@ -86,15 +85,17 @@ namespace IngameScript
             {
                 string vlMSG = "";
                 int vlI = 0;
-                if (data.cargoLst.MaterialQuantity.Any(m => m.Item1 == vfType) && data.cargoLst.MaterialQuantity.Count > 0) // Checks if it does have that type, otherwise no point in continuing
+                int vlIndex = data.cargoLst.MaterialQuantity.FindIndex(a => a.Item1 == vfType); // Checks if it does have that type, otherwise no point in continuing
+                if (vlIndex >=0 || vfType == "") // Checks if it does have that type, otherwise no point in continuing
                 {
+                    Echo("found general type");
                     foreach (MyTuple<string, string, float> line in data.cargoLst.MaterialQuantity)
                     {
                         //Cycles through the list and builds up a message with only the permitted items and in the specified conditions
                         if (vfType == line.Item1 || vfType == "")
                         {
                             vlMSG = vlMSG + string.Format(" {0}: #{1}", line.Item2, line.Item3);
-                            vlMSG = (vlI % itemsPerLine != 0) ? vlMSG + "\n" : vlMSG + " | ";
+                            vlMSG = (vlI+1 % itemsPerLine == 0) ? vlMSG + "\n" : vlMSG + " | ";
                             vlI++;
                         }
                     }
@@ -144,13 +145,16 @@ namespace IngameScript
 
             //testing stuff
             printItemAll("LCD", vlCargo);
-            //printInLCD("LCD", vlCargo);
-            IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName("LCD") as IMyTextPanel;
-            foreach (long item in vlCargo.TEST)
-            {
-                vlLCD.WriteText(item.ToString(), true);
-            }
-            
+            //IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName("LCD") as IMyTextPanel;
+            //foreach (MyTuple<string, string, float> item in vlCargo.cargoLst.MaterialQuantity)
+            //{
+            //    vlLCD.WriteText(string.Format("{0} {1} {2}", item.Item1, item.Item2, item.Item3), true);
+            //}
+            //foreach (string item in vlCargo.TEST1)
+            //{
+            //    vlLCD.WriteText(item.ToString() + "\n", true);
+            //}
+
         }
     }
 }

@@ -23,9 +23,15 @@ namespace IngameScript
     {
         public class cargoClass
         {
+            //private string name; // field
+            //public string Name   // property
+            //{
+            //    get { return name; }   // get method
+            //    set { name = value; }  // set method
+            //}
             //contains every information about the cargos, what items they have, in what cargo id, what quantities 
             //and in what position of the cargo array, for easier transfer, if needed.
-            public class individualCargo 
+            public class individualCargo
             {
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
                 public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
@@ -48,8 +54,8 @@ namespace IngameScript
                 {
                     // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MaterialList[10]
                     //To achieve this, items can only be added in this method.
-                    MyTuple<string, string, VRage.MyFixedPoint, int> vlNewMats = new MyTuple<string, string, VRage.MyFixedPoint, int>( vfType, vfSubType, vfQuant, vfPos);
-                        //check if id in question exists.
+                    MyTuple<string, string, VRage.MyFixedPoint, int> vlNewMats = new MyTuple<string, string, VRage.MyFixedPoint, int>(vfType, vfSubType, vfQuant, vfPos);
+                    //check if id in question exists.
                     if (!ID.Contains(vfID))
                     {
                         //it does not, so create. 
@@ -79,7 +85,7 @@ namespace IngameScript
                 public void addQuantities(string vfSubType, string vfType, float vfQuantity)
                 {
                     int vlIndex = MaterialQuantity.FindIndex(a => a.Item1 == vfType && a.Item2 == vfSubType); // Checks if it does have that type, otherwise no point in continuing
-                    if (vlIndex >= 0) 
+                    if (vlIndex >= 0)
                     {
                         //Found the item in question. increment
                         MyTuple<string, string, float> vlTMP = MaterialQuantity[vlIndex];
@@ -95,25 +101,24 @@ namespace IngameScript
 
             //Declare initial variables. Note that refineries and assemblies don't need this flag because they'll be managed in another way
             private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector = false;
-            public MyFixedPoint CurrentVolume, TotalVolume = 0;
+            private MyFixedPoint __currentVolume, __totalVolume = 0;
+            public MyFixedPoint CurrentVolume{ get{ return __currentVolume; } }
+            public MyFixedPoint TotalVolume { get { return __totalVolume; } }
             public float CargoRacio = 0;
             public int Count = 0;
             public individualCargo cargoLst = new individualCargo();
-
-            public List<string> TEST = new List<string>();
-            public List<string> TEST1 = new List<string>();
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
             {
                 impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false;
-                CurrentVolume = 0; TotalVolume = 0; CargoRacio = 0; Count = 0;
+                __currentVolume = 0; __totalVolume = 0; CargoRacio = 0; Count = 0;
             }
 
             public void Clear()
             {
                 impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false;
-                CurrentVolume = 0; TotalVolume = 0; CargoRacio = 0; Count = 0;
+                __currentVolume = 0; __totalVolume = 0; CargoRacio = 0; Count = 0;
             }
 
             private float calcPercentage(float value, float total)
@@ -163,110 +168,14 @@ namespace IngameScript
                 else if (vfBlock == typeof(IMyGasGenerator)) { impGenerator = true; }
             }
 
-            //This function is not very well made, but it worked on a previous version of the code and I'm too tired to
-            //"pimp" it up now. 
-            private string[] cToSE_Key(string thisItem)
-            {
-                string[] components = new string[]{"Construction", "MetalGrid", "InteriorPlate", "SteelPlate", "Girder", "SmallTube", "LargeTube", "Motor", "Display", "Glass",
-                "Superconductor", "Computer", "Reactor", "Thrust", "GravityGen", "Medical", "RadioComm", "Detector", "Explosives", "SolarCell", "PowerCell"};
-                string[] ores = new string[] { "Ice", "Stone", "Gold Ore", "Iron Ore", "Silver Ore", "Cobalt Ore", "Nickel Ore", "Uranium Ore", "Silicon Ore", "Platinum Ore", "Magnesium Ore" };
-                string[] ingots = new string[] { "Gravel", "Gold Ingot", "Silver Ingot", "Nickel Ingot", "Iron Ingot", "Silicon Ingot", "Platinum Ingot", "Magnesium Ingot" };
-                string[] tools = new string[] { "Drill", "Drill2", "Drill3", "Drill4", "WelderI", "WelderI2", "WelderI3", "WelderI4", "Grinder", "Grinder2", "Grinder3", "Grinder4" };
-                string[] ammo = new string[] { "Missile", "Ammo045mm", "Ammo184mm" };
-                string SE_Type = "";
-                string SE_SubType = "";
-                //Determines Type
-                if (components.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Component"; }
-                else if (ores.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ore"; }
-                else if (ingots.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ingot"; }
-                else if (tools.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_PhysicalGunObject"; }
-                else if (ammo.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_AmmoMagazine"; }
-                else if (thisItem == "OxygenBottle") { SE_Type = "MyObjectBuilder_OxygenContainerObject"; }
-                else if (thisItem == "HydrogenBottle") { SE_Type = "MyObjectBuilder_GasContainerObject"; }
-                else if (thisItem == "ClankCola") { SE_Type = "MyObjectBuilder_ConsumableItem"; }
-                else { SE_Type = ""; }
-                //Determines SubType
-                if (thisItem == "Glass") { SE_SubType = "BulletproofGlass"; }
-                else if (thisItem == "GravityGen") { SE_SubType = "GravityGenerator"; }
-                else if (thisItem == "RadioComm") { SE_SubType = "RadioCommunication"; }
-                else if (thisItem == "Drill") { SE_SubType = "HandDrillItem"; }
-                else if (thisItem == "Drill2") { SE_SubType = "HandDrill2Item"; }
-                else if (thisItem == "Drill3") { SE_SubType = "HandDrill3Item"; }
-                else if (thisItem == "Drill4") { SE_SubType = "HandDrill4Item"; }
-                else if (thisItem == "Welder") { SE_SubType = "WelderItem"; }
-                else if (thisItem == "Welder2") { SE_SubType = "Welder2Item"; }
-                else if (thisItem == "Welder3") { SE_SubType = "Welder3Item"; }
-                else if (thisItem == "Welder4") { SE_SubType = "Welder4Item"; }
-                else if (thisItem == "Grinder") { SE_SubType = "AngleGrinderItem"; }
-                else if (thisItem == "Grinder2") { SE_SubType = "AngleGrinder2Item"; }
-                else if (thisItem == "Grinder3") { SE_SubType = "AngleGrinder3Item"; }
-                else if (thisItem == "Grinder4") { SE_SubType = "AngleGrinder4Item"; }
-                else if (thisItem == "OxygenBottle") { SE_SubType = "OxygenContainerObject"; }
-                else if (thisItem == "HydrogenBottle") { SE_SubType = "GasContainerObject"; }
-                else if (thisItem == "Missile") { SE_SubType = "Missile200mm"; }
-                else if (thisItem == "Ammo045mm") { SE_SubType = "NATO_5p56x45mm"; }
-                else if (thisItem == "Ammo184mm") { SE_SubType = "NATO_25x184mm"; }
-                else if (thisItem.Contains(" ")) { SE_SubType = null; }
-                else { SE_SubType = thisItem; }
-
-                return new string[] { SE_SubType, SE_Type };
-            }
-
-            //converts a game subtype to a more understandable, printable name
-            private string cFromSE_Key(string SE_SubType, string Type)
-            {
-                string nonSE_Name = "";
-                //Don't know who had the bright idea to name different items with the same subtype. Makes things unnecessarily hard
-                if (Type == "MyObjectBuilder_Ore" || Type == "MyObjectBuilder_Ingot")
-                {
-                    if (SE_SubType == "Ice" || SE_SubType == "Stone" || SE_SubType == "Gravel")
-                    {
-                        nonSE_Name = "MyObjectBuilder_Ore";
-                    }
-                    else
-                    {
-                        string vlNewType = (Type == "MyObjectBuilder_Ore") ? "Ore" : "Ing";
-                        nonSE_Name = SE_SubType + " " + vlNewType;
-                    }
-                }else if (SE_SubType == "ClangCola")
-                {
-                    nonSE_Name = "Clang Cola";
-                }
-                else
-                {
-                    if (SE_SubType == "BulletproofGlass") { nonSE_Name = "Glass"; }
-                    else if (SE_SubType == "GravityGenerator") { nonSE_Name = "GravityGen"; }
-                    else if (SE_SubType == "RadioCommunication") { nonSE_Name = "RadioComm"; }
-                    else if (SE_SubType == "HandDrillItem") { nonSE_Name = "Drill"; }
-                    else if (SE_SubType == "HandDrill2Item") { nonSE_Name = "Drill2"; }
-                    else if (SE_SubType == "HandDrill3Item") { nonSE_Name = "Drill3"; }
-                    else if (SE_SubType == "HandDrill4Item") { nonSE_Name = "Drill4"; }
-                    else if (SE_SubType == "WelderItem") { nonSE_Name = "Welder"; }
-                    else if (SE_SubType == "Welder2Item") { nonSE_Name = "Welder2"; }
-                    else if (SE_SubType == "Welder3Item") { nonSE_Name = "Welder3"; }
-                    else if (SE_SubType == "Welder4Item") { nonSE_Name = "Welder4"; }
-                    else if (SE_SubType == "AngleGrinderItem") { nonSE_Name = "Grinder"; }
-                    else if (SE_SubType == "AngleGrinder2Item") { nonSE_Name = "Grinder2"; }
-                    else if (SE_SubType == "AngleGrinder3Item") { nonSE_Name = "Grinder3"; }
-                    else if (SE_SubType == "AngleGrinder4Item") { nonSE_Name = "Grinder4"; }
-                    else if (SE_SubType == "OxygenContainerObject") { nonSE_Name = "OxygenBottle"; }
-                    else if (SE_SubType == "GasContainerObject") { nonSE_Name = "HydrogenBottle"; }
-                    else if (SE_SubType == "Missile200mm") { nonSE_Name = "Missile200mm"; }
-                    else if (SE_SubType == "NATO_5p56x45mm") { nonSE_Name = "NATO_5p56x45mm"; }
-                    else if (SE_SubType == "NATO_25x184mm") { nonSE_Name = "NATO_25x184mm"; }
-                    else { nonSE_Name = SE_SubType; }
-                }
-                return nonSE_Name;
-            }
-
             //Cycles through the inventory to catalog the requested items
             private void searchInventory(IMyTerminalBlock vfCargo, List<string> vfType, string vfSubType = "All")
             {
                 if ((vfCargo.IsFunctional == true))
                 {
                     IMyInventory vlInventory = vfCargo.GetInventory(0);
-                    TotalVolume += vlInventory.MaxVolume;
-                    CurrentVolume += vlInventory.CurrentVolume;
+                    __totalVolume += vlInventory.MaxVolume;
+                    __currentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;
                     Count++;
                     var vlItemLst = fillListFromInventory(vlInventory);
@@ -282,22 +191,6 @@ namespace IngameScript
                         }
                     }
                 }
-            }
-
-            //I could probably do all in one single function without dificulty, but it would probably be more complicated if someone wants to pick this up
-            //... namely me, after months or years without touching this
-            private void listAllMaterialsByType(IMyInventory vfCargo, string vfType = "All")
-            {
-                //Types are: Ores, Ingots, Components, Tools, Ammo
-                //listAllMaterials(vfCargo, "All", vfType);
-            }
-
-            private void listAllMaterialsBySubType(IMyInventory vfCargo, string vfSubType = "All")
-            {
-                string[] types = new string[] { "All", "All" };
-                if (vfSubType != "All") { types = cToSE_Key(vfSubType); }
-                //Subtypes are all individual items under each of the type categories Ores, Ingots, Components, Tools, Ammo
-                //listAllMaterials(vfCargo, types[0], types[1]);
             }
 
             //auxiliary function to skil a boring step from the process of declaring the inventory lists
@@ -343,7 +236,7 @@ namespace IngameScript
                             effectiveness unless otherwise instructed*/
 
                         }
-                        CargoRacio = calcPercentage((float)CurrentVolume, (float)TotalVolume);
+                        CargoRacio = calcPercentage((float)__currentVolume, (float)__totalVolume);
                     }
                 }
             }

@@ -24,8 +24,9 @@ namespace IngameScript
         //string conversions From and To SE Type and SubType codes to userfriendly terms
         //This function is not very well made, but it worked on a previous version of the code and I'm too tired to
         //"pimp" it up now. 
-        private string[] cToSE_Key(string thisItem)
+        public List<string> cToSE_Key(string thisItem)
         {
+            //Some new items may be missing
             string[] components = new string[]{"Construction", "MetalGrid", "InteriorPlate", "SteelPlate", "Girder", "SmallTube", "LargeTube", "Motor", "Display", "Glass",
                 "Superconductor", "Computer", "Reactor", "Thrust", "GravityGen", "Medical", "RadioComm", "Detector", "Explosives", "SolarCell", "PowerCell"};
             string[] ores = new string[] { "Ice", "Stone", "Gold Ore", "Iron Ore", "Silver Ore", "Cobalt Ore", "Nickel Ore", "Uranium Ore", "Silicon Ore", "Platinum Ore", "Magnesium Ore" };
@@ -68,11 +69,11 @@ namespace IngameScript
             else if (thisItem.Contains(" ")) { SE_SubType = null; }
             else { SE_SubType = thisItem; }
 
-            return new string[] { SE_SubType, SE_Type };
+            return new List<string> { SE_Type, SE_SubType };
         }
 
         //determines SE code type from a list of more reader friendly codes
-        private string cToSE_Type(string vfNormal_Type)
+        public string cToSE_Type(string vfNormal_Type)
         {
             string vlSE_Type = "";
 
@@ -90,11 +91,11 @@ namespace IngameScript
         }
 
         //converts a game subtype to a more understandable, printable name
-        private string cFromSE_Key(string SE_SubType, string Type)
+        public string cFromSE_Key(string SE_SubType, string SE_Type)
         {
             string nonSE_Name = "";
             //Don't know who had the bright idea to name different items with the same subtype. Makes things unnecessarily hard
-            if (Type == "MyObjectBuilder_Ore" || Type == "MyObjectBuilder_Ingot")
+            if (SE_Type == "MyObjectBuilder_Ore" || SE_Type == "MyObjectBuilder_Ingot")
             {
                 if (SE_SubType == "Ice" || SE_SubType == "Stone" || SE_SubType == "Gravel")
                 {
@@ -102,7 +103,7 @@ namespace IngameScript
                 }
                 else
                 {
-                    string vlNewType = (Type == "MyObjectBuilder_Ore") ? "Ore" : "Ing";
+                    string vlNewType = (SE_Type == "MyObjectBuilder_Ore") ? "Ore" : "Ing";
                     nonSE_Name = SE_SubType + " " + vlNewType;
                 }
             }
@@ -137,7 +138,6 @@ namespace IngameScript
             return nonSE_Name;
         }
 
-        //private Dictionary<string, float>
 
         //Methods to determine grid wonership and blocksearch filtering by grid
         //Determines whether a block belongs to the same grid as the programming block calling it or not
@@ -175,6 +175,7 @@ namespace IngameScript
             return vlTMP;
         }
 
+        //checks if the ship is connected anywhere and if it is, gets the block info in question
         private IMyTerminalBlock getExernalConnector()
         {
             List<IMyTerminalBlock> vlExternal = new List<IMyTerminalBlock>();
@@ -403,7 +404,7 @@ namespace IngameScript
 
 
 
-        //transfering functionsmethods . 
+        //transfering functions/methods . 
         //Filtered so it only tries to do anything if it's connected somewhere else and that else is something that can receive items
         private void drainAllOfType(cargoClass[] data, string vfType)
         {
@@ -429,6 +430,7 @@ namespace IngameScript
                 foreach (cargoClass item in data)
                 {
                     //item.fillWithAllOfType(cToSE_Type(vfType), vlExternal);
+                    //???? WIP
                 }
             }
         }
@@ -444,9 +446,9 @@ namespace IngameScript
                 //Filter dictionary to remove items that are already inside the ship
                 foreach (cargoClass innerCargo in data)
                 {
-
+                    //innerCargo.MaterialQuantity
                     //vlList.updateTransferList();
-                    
+                    //???? WIP
                 }
             }
         }
@@ -483,7 +485,7 @@ namespace IngameScript
                                         //We found an item to transfer. From here, we need the following information.
                                         //ID of the block to where it is now, ID of the block to receive it, inventory position where the item is now.
                                         var vlItemsTransfered = attemptItemTransfer(originLst.Item1, destinationLst.Item1, originLst.Item3[vlItemIndex].Item4);
-                                        
+                                        //???? WIP
                                     }
                                 }
                             }
@@ -504,7 +506,7 @@ namespace IngameScript
         {
             MyFixedPoint vlTMP = 0;
             IMyInventory vlOrigin = GridTerminalSystem.GetBlockWithId(vfOriginID).GetInventory(0);
-
+            //???? WIP
 
             return vlTMP;
         }

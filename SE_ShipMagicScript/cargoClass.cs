@@ -21,16 +21,8 @@ namespace IngameScript
 {
     partial class Ship_Main
     {
-        public class cargoClass
+        public class cargoClass : MyGridProgram
         {
-            //private string name; // field
-            //public string Name   // property
-            //{
-            //    get { return name; }   // get method
-            //    set { name = value; }  // set method
-            //}
-            //contains every information about the cargos, what items they have, in what cargo id, what quantities 
-            //and in what position of the cargo array, for easier transfer, if needed.
             public class individualCargo
             {
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
@@ -78,7 +70,8 @@ namespace IngameScript
                         //Note that this system does not increment the quantity of the same material. It lists it so it is easier to access it for transfer
                         //An increment is made, but it is made on the same method that calls this one.
                     }
-                    addQuantities(vfSubType, vfType, (float)vfQuant);
+                    //if type is empty it means we're just marking the id and free space in the list. No need to update the quantity of an item that does not exist
+                    if (vfType != "") { addQuantities(vfSubType, vfType, (float)vfQuant); }
                 }
 
                 //adds items to the quantity list in a controlled fashion. Serves for printing info
@@ -100,25 +93,32 @@ namespace IngameScript
             }
 
             //Declare initial variables. Note that refineries and assemblies don't need this flag because they'll be managed in another way
-            private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector = false;
+            private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector, isFacility = false;
             private MyFixedPoint __currentVolume, __totalVolume = 0;
-            public MyFixedPoint CurrentVolume{ get{ return __currentVolume; } }
+            private float __CargoRacio = 0;
+            private int __count = 0;
+            private individualCargo cargoLst = new individualCargo();
+            private string __lastBlockFound = "";
+
+            //Define encapsulation variables to prevent users from messing with the information
+            public MyFixedPoint CurrentVolume { get { return __currentVolume; } }
             public MyFixedPoint TotalVolume { get { return __totalVolume; } }
-            public float CargoRacio = 0;
-            public int Count = 0;
-            public individualCargo cargoLst = new individualCargo();
+            public float Racio { get { return __CargoRacio; } }
+            public int Count { get { return __count; } }
+            public List<MyTuple<string, string, float>> MaterialQuantity { get { return cargoLst.MaterialQuantity; } }
+
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
             {
-                impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false;
-                __currentVolume = 0; __totalVolume = 0; CargoRacio = 0; Count = 0;
+                impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false; isFacility = false;
+                __currentVolume = 0; __totalVolume = 0; __CargoRacio = 0; __count = 0;
             }
 
             public void Clear()
             {
                 impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false;
-                __currentVolume = 0; __totalVolume = 0; CargoRacio = 0; Count = 0;
+                __currentVolume = 0; __totalVolume = 0; __CargoRacio = 0; __count = 0;
             }
 
             private float calcPercentage(float value, float total)
@@ -171,23 +171,29 @@ namespace IngameScript
             //Cycles through the inventory to catalog the requested items
             private void searchInventory(IMyTerminalBlock vfCargo, List<string> vfType, string vfSubType = "All")
             {
-                if ((vfCargo.IsFunctional == true))
+                if ((vfCargo.IsFunctional))
                 {
                     IMyInventory vlInventory = vfCargo.GetInventory(0);
                     __totalVolume += vlInventory.MaxVolume;
                     __currentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;
-                    Count++;
+                    __count++;
                     var vlItemLst = fillListFromInventory(vlInventory);
+
                     //each vlI corresponds to a slot in the inventory. items may be divided into different stacks 
                     //despite being the same component type and subtype
-                    
+
                     for (int vlI = 0; vlI < vlItemLst.Count; vlI++)
                     {
                         //check if the item in question is within the search parametres
                         if (foundItemInInventory(vlItemLst[vlI], vfType, vfSubType))
                         {
                             cargoLst.addItem(vfCargo.GetId(), vlFreeSpace, vlItemLst[vlI].Type.TypeId.ToString(), vlItemLst[vlI].Type.SubtypeId.ToString(), vlItemLst[vlI].Amount, vlI);
+                        }
+                        else
+                        {
+                            //adds empty string just to mark the ID and freespace
+                            cargoLst.addItem(vfCargo.GetId(), vlFreeSpace, "", "", 0, 0);
                         }
                     }
                 }
@@ -214,6 +220,25 @@ namespace IngameScript
                 return vlTMP;
             }
 
+            private void transferItems()
+            {
+
+            }
+
+            private MyTuple<float, int> searchList(string vfType = "", string vfSubType = "")
+            {
+                MyTuple<float, int> vlResult = new MyTuple<float, int>(0, 0);
+
+                foreach (var Line in cargoLst.MaterialList)
+                {
+
+                }
+
+                //????
+                return vlResult;
+            }
+
+            //******Accessible by outside functions*******//
             //Makes the class search the designated cargo type in search of the requested type.
             //DOES NOT HANDLE REFINERIES OR ASSEMBLIES!! That's in another place
             public void getCargoCount(List<IMyTerminalBlock> vfBlockLst, bool vfComp = false, bool vfOres = false, bool vfIngots = false, bool vfTools = false, bool vfAmmo = false) //Every basic cargo container. Small, Medium or Large
@@ -229,16 +254,32 @@ namespace IngameScript
                         {
                             //searches each individual inventory block for the required items
                             searchInventory(vfBlockLst[vlI], vlTypeLst);
-
-                            /*Here we debate with the same ancient question: elegance or effectiveness? use this opportunity to gather 
-                            info about blocks that besides cargo have other important data or keep things clean and simple at the cost of
-                            multiple cycles through the same block? When both can me used, use both, when only one is available, I always choose 
-                            effectiveness unless otherwise instructed*/
-
                         }
-                        CargoRacio = calcPercentage((float)__currentVolume, (float)__totalVolume);
+                        __CargoRacio = calcPercentage((float)__currentVolume, (float)__totalVolume);
                     }
                 }
+            }
+
+            //innerTransfer = null serves to indicate if the cargo is supposed to search and transfer to the same grid its on. For assemblies and refineries, for example.
+            //Searches every item in the cargo and pushes them to the connected grids, if there is space available.
+            public void drainAllOfType(string vfType, List<IMyTerminalBlock> vfExternalCargo = null)
+            {
+                //search item list in search of the "offending" 
+
+
+                //IMyTerminalBlock variable = GridTerminalSystem.GetBlockWithId(15216546546354) ;
+            }
+
+            //Searches selected type in the connected grids and pulls them to this cargo, if there is space available and the item exists
+            public void fillWithAllOfType(string vfType, List<IMyTerminalBlock> vfExternalCargo = null)
+            {
+
+            }
+
+            //Searches the listed items in the connected grids and pulls them to this cargo, if there is space available and the item exists
+            public void fillWithList(Dictionary<string, float> vfList, List<IMyTerminalBlock> vfExternalCargo = null)
+            {
+
             }
         }
     }

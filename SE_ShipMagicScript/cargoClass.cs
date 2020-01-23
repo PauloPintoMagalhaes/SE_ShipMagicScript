@@ -27,53 +27,43 @@ namespace IngameScript
             {
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
                 public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
-                public List<long> ID = new List<long>();
-                public List<MyFixedPoint> FreeVolume = new List<MyFixedPoint>();
-                //SubType, Type, quantity, totalVolume, position, volume of 1 item
-                public List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> MaterialList = new List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>>();
-                //I'm sorely lacking in encapsulation quality, but... one step at a time. Still... not bad for 2 day's work
+                //After this misbegotten list, there are only two possible conclusions: Either I'm a complete moron, or I'm a genius. Edit: given on how this didn't explode in my face, I'll go with genius, for now
+                public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList = new List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>>();
 
                 public individualCargo()
                 {
-                    ID.Clear();
-                    FreeVolume.Clear();
                     MaterialList.Clear();
                     MaterialQuantity.Clear();
                 }
 
                 //adds items to the cargo list in a controlled fashion. Serves for transfering
-                public void addItem(long vfID, MyFixedPoint vfFreespace, string vfType, string vfSubType, VRage.MyFixedPoint vfQuant, int vfPos)
+                public void addItem(long vfID, MyFixedPoint vfFreespace, string vfType, string vfSubType, MyFixedPoint vfQuant, int vfPos)
                 {
                     // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MaterialList[10]
                     //To achieve this, items can only be added in this method.
-                    MyTuple<string, string, VRage.MyFixedPoint, int> vlNewMats = new MyTuple<string, string, VRage.MyFixedPoint, int>(vfType, vfSubType, vfQuant, vfPos);
+                    MyTuple<string, string, MyFixedPoint, int> vlNewMats = new MyTuple<string, string, MyFixedPoint, int>(vfType, vfSubType, vfQuant, vfPos);
+                    var vlListLine = new List<MyTuple<string, string, MyFixedPoint, int>>();   //creates empty list
                     //check if id in question exists.
-                    if (!ID.Contains(vfID))
+                    int vlIndex = MaterialList.FindIndex(a => a.Item1 == vfID);
+                    if (vlIndex >= 0)
                     {
-                        //it does not, so create. 
-                        ID.Add(vfID);
-                        FreeVolume.Add(vfFreespace);
-                        List<MyTuple<string, string, VRage.MyFixedPoint, int>> listTMP = new List<MyTuple<string, string, VRage.MyFixedPoint, int>>();
-                        listTMP.Add(vlNewMats);
-                        MaterialList.Add(listTMP);
+                        //Contains ID , so updates the current list within a list
+                        vlListLine = MaterialList[vlIndex].Item3;
+                        vlListLine.Add(vlNewMats);  //Adds a new line of materials to this ID list
+                        var vlNewLine = MyTuple.Create(MaterialList[vlIndex].Item1, MaterialList[vlIndex].Item2, vlListLine);   //Creates a new line of list
+                        MaterialList[vlIndex] = vlNewLine;  //off with the old, on with the new
                     }
                     else
                     {
-                        //it does, so increment materials to id position. No need to add or change Id or freespace, since they're the same until a transfer
-                        int vlIndex = ID.IndexOf(vfID);
-                        //checks if the current SubType already exists in this ID
-                        List<MyTuple<string, string, VRage.MyFixedPoint, int>> vlInnerList = MaterialList[vlIndex]; //PM????
-                        //it does not, so create
-                        vlInnerList.Add(vlNewMats);
-                        //Then replace the old list with the new 
-                        MaterialList[vlIndex] = vlInnerList;
-                        //Note that this system does not increment the quantity of the same material. It lists it so it is easier to access it for transfer
-                        //An increment is made, but it is made on the same method that calls this one.
+                        //Could not find the ID. Add new one, even if empty
+                        vlListLine.Add(vlNewMats);   //adds the found mats
+                        var vlNewLine = MyTuple.Create(vfID, vfFreespace, vlListLine);   //Creates a new line of list
+                        MaterialList.Add(vlNewLine);
+
                     }
                     //if type is empty it means we're just marking the id and free space in the list. No need to update the quantity of an item that does not exist
                     if (vfType != "") { addQuantities(vfSubType, vfType, (float)vfQuant); }
                 }
-
                 //adds items to the quantity list in a controlled fashion. Serves for printing info
                 public void addQuantities(string vfSubType, string vfType, float vfQuantity)
                 {
@@ -98,7 +88,6 @@ namespace IngameScript
             private float __CargoRacio = 0;
             private int __count = 0;
             private individualCargo cargoLst = new individualCargo();
-            private string __lastBlockFound = "";
 
             //Define encapsulation variables to prevent users from messing with the information
             public MyFixedPoint CurrentVolume { get { return __currentVolume; } }
@@ -106,7 +95,7 @@ namespace IngameScript
             public float Racio { get { return __CargoRacio; } }
             public int Count { get { return __count; } }
             public List<MyTuple<string, string, float>> MaterialQuantity { get { return cargoLst.MaterialQuantity; } }
-            public List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> MaterialList { get { return cargoLst.MaterialList; } }
+            public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList { get { return cargoLst.MaterialList; } }
 
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
@@ -221,18 +210,6 @@ namespace IngameScript
                 return vlTMP;
             }
 
-            private MyTuple<float, int> searchList(string vfType = "", string vfSubType = "")
-            {
-                MyTuple<float, int> vlResult = new MyTuple<float, int>(0, 0);
-
-                foreach (var Line in cargoLst.MaterialList)
-                {
-
-                }
-
-                //????
-                return vlResult;
-            }
 
             //******Accessible by outside functions*******//
             //Makes the class search the designated cargo type in search of the requested type.
@@ -254,28 +231,6 @@ namespace IngameScript
                         __CargoRacio = calcPercentage((float)__currentVolume, (float)__totalVolume);
                     }
                 }
-            }
-
-            //innerTransfer = null serves to indicate if the cargo is supposed to search and transfer to the same grid its on. For assemblies and refineries, for example.
-            //Searches every item in the cargo and pushes them to the connected grids, if there is space available.
-            public void drainAllOfType(string vfType, List<IMyTerminalBlock> vfExternalCargo = null)
-            {
-                //search item list in search of the "offending" 
-
-
-                IMyTerminalBlock variable = GridTerminalSystem.GetBlockWithId(15216546546354) ;
-            }
-
-            //Searches selected type in the connected grids and pulls them to this cargo, if there is space available and the item exists
-            public void fillWithAllOfType(string vfType, List<IMyTerminalBlock> vfExternalCargo = null)
-            {
-
-            }
-
-            //Searches the listed items in the connected grids and pulls them to this cargo, if there is space available and the item exists
-            public void fillWithList(Dictionary<string, float> vfList, List<IMyTerminalBlock> vfExternalCargo = null)
-            {
-
             }
         }
     }

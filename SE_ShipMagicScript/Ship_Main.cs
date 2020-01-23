@@ -21,30 +21,6 @@ namespace IngameScript
 {
     partial class Ship_Main : MyGridProgram
     {
-        //This list decided which items you want to automatically pull to your ship IF, there is space or connection available.
-        Dictionary<string, float> desiredMaterials = new Dictionary<string, float> { 
-            //Components
-			{"Construction", 10000}, {"MetalGrid", 2000}, {"InteriorPlate", 10000}, {"SteelPlate", 10000},
-            {"Girder", 2000}, {"SmallTube", 10000}, {"LargeTube", 2000}, {"Motor", 3000}, {"Display", 500}, {"Glass", 5000},
-            {"Superconductor", 500}, {"Computer", 3000}, {"Reactor", 2000}, {"Thrust", 2000}, {"GravityGen", 1000}, {"Medical", 500},
-            {"RadioComm", 300}, {"Detector", 300}, {"Explosives", 300}, {"SolarCell", 3000}, {"PowerCell", 3000}, 
-			//Ores
-			{"Ice", 0}, {"Stone", 0}, {"Gold Ore", 0}, {"Iron Ore", 0}, {"Silver Ore", 0}, {"Cobalt Ore", 0}, {"Nickel Ore", 0}, {"Uranium Ore", 0},
-            {"Silicon Ore", 0}, {"Platinum Ore", 0}, {"Magnesium Ore", 0}, {"Gravel", 0}, {"Gold Ingot", 0}, {"Silver Ingot", 0}, {"Nickel Ingot", 0},
-            {"Iron Ingot", 0}, {"Silicon Ingot", 0}, {"Platinum Ingot", 0}, {"Magnesium Ingot", 0}, 
-			//Tools and bottles
-			{"Drill",  0}, {"Drill2", 0}, {"Drill3", 0}, {"Drill4", 0},
-            {"Welder", 0}, {"Welder2", 0}, {"Welder3", 0}, {"Welder4", 0},
-            {"Grinder", 0}, {"Grinder2", 0}, {"Grinder3", 0}, {"Grinder4", 0},
-            {"OxygenBottle", 0}, {"HydrogenBottle", 0}, 
-			//Ammo
-			{"Missile", 0}, {"Ammo045mm", 0}, {"Ammo184mm", 0},
-            //Consumables
-            {"ClangCola", 0}
-            //List is missing Uranium Ingot because it would have been sucked up by a random reactor, anyway.
-        };
-
-
         //string conversions From and To SE Type and SubType codes to userfriendly terms
         //This function is not very well made, but it worked on a previous version of the code and I'm too tired to
         //"pimp" it up now. 
@@ -161,6 +137,7 @@ namespace IngameScript
             return nonSE_Name;
         }
 
+        //private Dictionary<string, float>
 
         //Methods to determine grid wonership and blocksearch filtering by grid
         //Determines whether a block belongs to the same grid as the programming block calling it or not
@@ -451,24 +428,30 @@ namespace IngameScript
                 List<IMyTerminalBlock> vlExternal = cargoType_Connected(getExernalConnector());
                 foreach (cargoClass item in data)
                 {
-                    item.fillWithAllOfType(cToSE_Type(vfType), vlExternal);
+                    //item.fillWithAllOfType(cToSE_Type(vfType), vlExternal);
                 }
             }
         }
 
-        private void fillWithList(cargoClass[] data, Dictionary<string, float> vfList)
+        private void fillWithList(cargoClass[] data)
         {
             if (data != null && isConnected())
             {
-                List<IMyTerminalBlock> vlExternal = cargoType_Connected(getExernalConnector());
-                foreach (cargoClass item in data)
+                transferClass vlList = new transferClass();
+                //Filter the dictionary to remove values <= 0
+                vlList.trimTransferList();  //by default, trims zero and negative values. To change this, vlList.SetToTrimZeroes = False, then TrimTransfer List
+
+                //Filter dictionary to remove items that are already inside the ship
+                foreach (cargoClass innerCargo in data)
                 {
-                    item.fillWithList(vfList, vlExternal);
+
+                    //vlList.updateTransferList();
+                    
                 }
             }
         }
 
-        private void searchThroughLists(List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> vfOrigList, List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> vfDestinList, bool vfFirstFree = false)
+        private void searchThroughLists(List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOrigList, List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfDestinList, bool vfFirstFree = false, bool vfUseGlobalList = false)
         {
             //We're going to have to change these lists, so we parse them here. We don't need to change anything in the class itself because the next cycle of the programming block will update the info anyway
             var originLstLst = vfOrigList; 
@@ -481,9 +464,9 @@ namespace IngameScript
             foreach (var originLst in originLstLst)
             {
                 //skips empty lists
-                if(originLst != null)
+                if (originLst.Item3 != null)
                 {
-                    foreach (var originLine in originLst)
+                    foreach (var originLine in originLst.Item3)
                     {
                         //Else, if it found something, verify each of its items and attempts to find a match on the other list
                         if (!vfFirstFree)
@@ -491,20 +474,20 @@ namespace IngameScript
                             //Cycles through the list in search of any item of the following category
                             foreach (var destinationLst in destinationLstLst)
                             {
-                                if (destinationLst != null )
+                                if (destinationLst.Item3 != null)
                                 {
                                     //skips empty lists
-                                    vlItemIndex = destinationLst.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2); 
+                                    vlItemIndex = destinationLst.Item3.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
                                     if (vlItemIndex >= 0) // Checks if it does have that type, otherwise no point in continuing  
                                     {
-                                        //We found an item to transfer. From here, we need the following information. 
-                                        //ID of the block to receive it, ID of the block to receive it, position where the item is now
-
+                                        //We found an item to transfer. From here, we need the following information.
+                                        //ID of the block to where it is now, ID of the block to receive it, inventory position where the item is now.
+                                        var vlItemsTransfered = attemptItemTransfer(originLst.Item1, destinationLst.Item1, originLst.Item3[vlItemIndex].Item4);
                                         
                                     }
                                 }
-                                vlDestIndex++;
                             }
+                            vlDestIndex++;
                         }
                         else
                         {
@@ -514,6 +497,16 @@ namespace IngameScript
                 }
                 vlOrigIndex++;
             }
+        }
+
+        //attempts to transfer vfQuantity of an item from vfOrigin in position vfPos and send it to vfDestination
+        private MyFixedPoint attemptItemTransfer(long vfOriginID, long vfDestinID, int vfPos, float vfQuantity = 0)
+        {
+            MyFixedPoint vlTMP = 0;
+            IMyInventory vlOrigin = GridTerminalSystem.GetBlockWithId(vfOriginID).GetInventory(0);
+
+
+            return vlTMP;
         }
 
 

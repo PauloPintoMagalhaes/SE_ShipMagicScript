@@ -106,6 +106,7 @@ namespace IngameScript
             public float Racio { get { return __CargoRacio; } }
             public int Count { get { return __count; } }
             public List<MyTuple<string, string, float>> MaterialQuantity { get { return cargoLst.MaterialQuantity; } }
+            public List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> MaterialList { get { return cargoLst.MaterialList; } }
 
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
@@ -220,11 +221,6 @@ namespace IngameScript
                 return vlTMP;
             }
 
-            private void transferItems()
-            {
-
-            }
-
             private MyTuple<float, int> searchList(string vfType = "", string vfSubType = "")
             {
                 MyTuple<float, int> vlResult = new MyTuple<float, int>(0, 0);
@@ -241,7 +237,7 @@ namespace IngameScript
             //******Accessible by outside functions*******//
             //Makes the class search the designated cargo type in search of the requested type.
             //DOES NOT HANDLE REFINERIES OR ASSEMBLIES!! That's in another place
-            public void getCargoCount(List<IMyTerminalBlock> vfBlockLst, bool vfComp = false, bool vfOres = false, bool vfIngots = false, bool vfTools = false, bool vfAmmo = false) //Every basic cargo container. Small, Medium or Large
+            public void getCargo(List<IMyTerminalBlock> vfBlockLst, bool vfComp = false, bool vfOres = false, bool vfIngots = false, bool vfTools = false, bool vfAmmo = false) //Every basic cargo container. Small, Medium or Large
             {
                 List<string> vlTypeLst = buildTypeArray(vfComp, vfOres, vfIngots, vfTools, vfAmmo);
                 //No point trying to do anything if list is empty, found an error or already searched this cargo type.
@@ -267,7 +263,7 @@ namespace IngameScript
                 //search item list in search of the "offending" 
 
 
-                //IMyTerminalBlock variable = GridTerminalSystem.GetBlockWithId(15216546546354) ;
+                IMyTerminalBlock variable = GridTerminalSystem.GetBlockWithId(15216546546354) ;
             }
 
             //Searches selected type in the connected grids and pulls them to this cargo, if there is space available and the item exists

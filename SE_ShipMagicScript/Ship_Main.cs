@@ -271,20 +271,7 @@ namespace IngameScript
             return vlCargoList;
         }
 
-        private List<IMyTerminalBlock> externalCargo()
-        {
-            //This exists only to give the main ship something to throw its items at. 
-            var vlCargoList = new List<IMyTerminalBlock>();
-            var vlListTMP = new List<IMyTerminalBlock>();
-
-            GridTerminalSystem.GetBlocksOfType<IMyCargoContainer>(vlCargoList, isExternalGrid);
-            GridTerminalSystem.GetBlocksOfType<IMyShipConnector>(vlListTMP, isExternalGrid);
-            if (vlListTMP != null || vlListTMP.Count > 0) { vlCargoList.AddRange(vlListTMP); }
-
-            return vlCargoList;
-        }
-
-        private List<IMyTerminalBlock> connectedCargo(IMyTerminalBlock vfConnetor, bool includeReac_H2O2 = false, bool includeProduction = false)
+        private List<IMyTerminalBlock> cargoType_Connected(IMyTerminalBlock vfConnetor, bool includeReac_H2O2 = false)
         {
             //explanations on cargoType()
             var vlCargoList = new List<IMyTerminalBlock>();
@@ -309,23 +296,17 @@ namespace IngameScript
                 GridTerminalSystem.GetBlocksOfType<IMyGasGenerator>(vlListTMP, x => x.CubeGrid == vfConnetor.CubeGrid);
                 if (vlListTMP != null || vlListTMP.Count > 0) { vlCargoList.AddRange(vlListTMP); }
             }
-            if (includeProduction)
-            {
-                GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlListTMP, x => x.CubeGrid == vfConnetor.CubeGrid);
-                if (vlListTMP != null || vlListTMP.Count > 0) { vlCargoList.AddRange(vlListTMP); }
-                GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlListTMP, x => x.CubeGrid == vfConnetor.CubeGrid);
-                if (vlListTMP != null || vlListTMP.Count > 0) { vlCargoList.AddRange(vlListTMP); }
-            }
             return vlCargoList;
         }
 
-        private List<IMyTerminalBlock> facilityCargo(string blockType = "All", bool isLocal = false)
+        private List<IMyTerminalBlock> cargoType_Facility(string blockType = "All", IMyTerminalBlock vfConnetor = null)
         {
             //This exists only to give the main ship something to throw its items at. 
             var vlCargoList = new List<IMyTerminalBlock>();
             var vlListTMP = new List<IMyTerminalBlock>();
             //since I can't put the result of isLocalGrid and isExternalGrid into a variable, I'm forced to double the ammount of code
-            if (isLocal)
+
+            if (vfConnetor != null)
             {
                 if (blockType == "Refinery") { GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlCargoList, isLocalGrid); }
                 else if (blockType == "Assembly") { GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlCargoList, isLocalGrid); }
@@ -338,21 +319,21 @@ namespace IngameScript
             }
             else
             {
-                if (blockType == "Refinery") { GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlCargoList, isExternalGrid); }
-                else if (blockType == "Assembly") { GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlCargoList, isExternalGrid); }
+                if (blockType == "Refinery") { GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlCargoList, x => x.CubeGrid == vfConnetor.CubeGrid); }
+                else if (blockType == "Assembly") { GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlCargoList, x => x.CubeGrid == vfConnetor.CubeGrid); }
                 else
                 {
-                    GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlCargoList, isExternalGrid);
-                    GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlListTMP, isExternalGrid);
+                    GridTerminalSystem.GetBlocksOfType<IMyRefinery>(vlCargoList, x => x.CubeGrid == vfConnetor.CubeGrid);
+                    GridTerminalSystem.GetBlocksOfType<IMyAssembler>(vlListTMP, x => x.CubeGrid == vfConnetor.CubeGrid);
                     if (vlListTMP != null || vlListTMP.Count > 0) { vlCargoList.AddRange(vlListTMP); }
                 }
             }
-
 
             return vlCargoList;
         }
 
 
+        
         //Information Print methods
         private string buildPrintMsg(string value1, float value2, int vfI, int itemsPerLine = 1, bool isPercentage = false)
         {
@@ -428,6 +409,22 @@ namespace IngameScript
             }
         }
 
+        private void printCustomMsg(string vfLCD_Name)
+        {
+            IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName(vfLCD_Name) as IMyTextPanel;
+            if (vlLCD != null)
+            {
+                string vlMSG = "";
+                //build custom message here
+
+
+
+                //print message
+                vlLCD.WriteText(vlMSG);
+            }
+        }
+
+
 
         //transfering functionsmethods . 
         //Filtered so it only tries to do anything if it's connected somewhere else and that else is something that can receive items
@@ -435,21 +432,23 @@ namespace IngameScript
         {
             if (data != null && isConnected())
             {
-                List<IMyTerminalBlock> vlExternal = connectedCargo(getExernalConnector());
-                foreach (cargoClass item in data)
+                cargoClass externalCargo = new cargoClass();
+                externalCargo.getCargo(cargoType_Connected(getExernalConnector()));
+                foreach (cargoClass innerCargo in data)
                 {
                     //Drains this type of item to indicated cargo
-                    item.drainAllOfType(cToSE_Type(vfType), vlExternal);
+                    //searchThroughLists(innerList, externalList, Type, SubType);   
+                    //search in innerList to send to externalList items of Type and SubType (No types mean all items) 
+                    searchThroughLists(innerCargo.MaterialList, externalCargo.MaterialList);
                 }
             }
-
         }
 
         private void fillWithAllOfType(cargoClass[] data, string vfType)
         {
             if (data != null && isConnected())
             {
-                List<IMyTerminalBlock> vlExternal = connectedCargo(getExernalConnector());
+                List<IMyTerminalBlock> vlExternal = cargoType_Connected(getExernalConnector());
                 foreach (cargoClass item in data)
                 {
                     item.fillWithAllOfType(cToSE_Type(vfType), vlExternal);
@@ -461,13 +460,62 @@ namespace IngameScript
         {
             if (data != null && isConnected())
             {
-                List<IMyTerminalBlock> vlExternal = connectedCargo(getExernalConnector());
+                List<IMyTerminalBlock> vlExternal = cargoType_Connected(getExernalConnector());
                 foreach (cargoClass item in data)
                 {
                     item.fillWithList(vfList, vlExternal);
                 }
             }
         }
+
+        private void searchThroughLists(List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> vfOrigList, List<List<MyTuple<string, string, VRage.MyFixedPoint, int>>> vfDestinList, bool vfFirstFree = false)
+        {
+            //We're going to have to change these lists, so we parse them here. We don't need to change anything in the class itself because the next cycle of the programming block will update the info anyway
+            var originLstLst = vfOrigList; 
+            var destinationLstLst = vfDestinList;
+            int vlOrigIndex = 0;
+            int vlDestIndex = 0;
+            int vlItemIndex = 0;
+
+            //Honestly, this is the part that I dislike the most
+            foreach (var originLst in originLstLst)
+            {
+                //skips empty lists
+                if(originLst != null)
+                {
+                    foreach (var originLine in originLst)
+                    {
+                        //Else, if it found something, verify each of its items and attempts to find a match on the other list
+                        if (!vfFirstFree)
+                        {
+                            //Cycles through the list in search of any item of the following category
+                            foreach (var destinationLst in destinationLstLst)
+                            {
+                                if (destinationLst != null )
+                                {
+                                    //skips empty lists
+                                    vlItemIndex = destinationLst.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2); 
+                                    if (vlItemIndex >= 0) // Checks if it does have that type, otherwise no point in continuing  
+                                    {
+                                        //We found an item to transfer. From here, we need the following information. 
+                                        //ID of the block to receive it, ID of the block to receive it, position where the item is now
+
+                                        
+                                    }
+                                }
+                                vlDestIndex++;
+                            }
+                        }
+                        else
+                        {
+                            //If found none or vfFirstFree is true, push it into the first available space
+                        }
+                    }
+                }
+                vlOrigIndex++;
+            }
+        }
+
 
 
         //Main function... where the party starts and ends
@@ -478,12 +526,12 @@ namespace IngameScript
             //Fills up variabbles with different type of content. If empty, it will search All types of cargo containers at once
             //Options are: "Container", "Connector", "Drill", "Welder", "Grinder" and "Reactor" and "O2Generator"
             //You can wipe the variable clean with vlCargo.Clear();
-            vlCargo.getCargoCount(cargoType("Container"));  //Already declared above
-            vlCargo.getCargoCount(cargoType("Connector"));  //Note that Ejectors count as connectors too
+            vlCargo.getCargo(cargoType("Container"));  //Already declared above
+            vlCargo.getCargo(cargoType("Connector"));  //Note that Ejectors count as connectors too
             cargoClass vlReactor = new cargoClass();
-            vlReactor.getCargoCount(cargoType("Reactor"));
+            vlReactor.getCargo(cargoType("Reactor"));
             cargoClass vlTool = new cargoClass();
-            vlTool.getCargoCount(cargoType("Drill"));
+            vlTool.getCargo(cargoType("Drill"));
 
             //Print remaining Info
             //printItemType("Name of LCD", Cargo Variable, Type (see list below), text begins with (use if you want to mark the following print with something), keep old text, Items per line);

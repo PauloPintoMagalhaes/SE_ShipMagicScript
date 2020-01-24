@@ -32,7 +32,7 @@ namespace IngameScript
 
         public class facilitiesClass 
         {
-            cargoClass Cargo = new cargoClass();
+            public cargoClass Cargo = new cargoClass();
 
 
         }

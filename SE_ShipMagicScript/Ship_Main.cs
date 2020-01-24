@@ -405,8 +405,8 @@ namespace IngameScript
         //transfering functions/methods . 
         private List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> trimByType (List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOld, string vfType)
         {
-            List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vlNewList = null;
-            List<MyTuple<string, string, MyFixedPoint, int>> vlSubList = null;
+            List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vlNewList = new List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>>();
+            List<MyTuple<string, string, MyFixedPoint, int>> vlSubList =new  List<MyTuple<string, string, MyFixedPoint, int>>();
             foreach (var listLine in vfOld)
             {
                 //id and freespace do not concern us here. we only check if type exists and if so, create list with it
@@ -488,9 +488,9 @@ namespace IngameScript
             }
         }
 
-        private List<MyTuple<string, string, MyFixedPoint, int>> searchConditions( List<MyTuple<string, string, MyFixedPoint, int>> vfOrigList, List<MyTuple<string, string, float>> vfUseGlobalList)
+        private List<MyTuple<string, string, MyFixedPoint, int>> initialSearchCheck( List<MyTuple<string, string, MyFixedPoint, int>> vfOrigList, List<MyTuple<string, string, float>> vfUseGlobalList)
         {
-            List<MyTuple<string, string, MyFixedPoint, int>> vlFound = null; 
+            List<MyTuple<string, string, MyFixedPoint, int>> vlFound = new List<MyTuple<string, string, MyFixedPoint, int>>(); 
             //checks if the cargo being searched has any of the intended items
             if (vfUseGlobalList == null && vfOrigList != null) 
             {
@@ -500,25 +500,22 @@ namespace IngameScript
             else if(vfUseGlobalList != null && vfOrigList != null)
             {
                 //If there is a specific search and origin has items to pick, then lets search
-                foreach (var originLine in vfOrigList)
+                foreach (var wantedLine in vfUseGlobalList)
                 {
                     //if the item in the list, find everyone and passes the item location to 
-                    var vlLine = vfUseGlobalList.Find(a=> a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
-                    if (vlLine.)
-                    {
-
-                    }
-                    
+                    var vlLine = vfOrigList.FindAll(a=> a.Item1 == wantedLine.Item1 && a.Item2 == wantedLine.Item2);
+                    if (vlLine != null || vlLine.Count > 0) { vlFound.AddRange(vlLine); }
                 }
             }
-            return vlFound;
+            return vlFound; //everything that gets here is to be transfered (checks on freespace and quantity limit come later)
         }
 
+        //I'd really like to have this function on the transferClass, but I can't seem to make GridTerminalSystem functions work outside here =(
         private void searchThroughLists(List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOrigList, List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfDestinList, bool vfOrganize = true, List<MyTuple<string, string, float>> vfUseGlobalList = null)
         {
             //We're going to have to change these lists, so we parse them here. We don't need to change anything in the class itself because the next cycle of the programming block will update the info anyway
             var originLstLst = vfOrigList; 
-            var destinationLstLst = vfDestinList;
+            var destinationLstLst = vfDestinList;   //originLstLst because its a list within a list, wheel within wheels, plans withing plans, schemes within schemes
             int vlOrigIndex = 0;
             //int vlDestIndex = 0;
             //int vlItemIndex = 0;
@@ -526,12 +523,19 @@ namespace IngameScript
             //Honestly, this is the part that I dislike the most
             foreach (var originLst in originLstLst)
             {
-                //checks conditions for transfer based on search parametres
-                if (searchConditions(originLst.Item3, vfUseGlobalList).Count > 0)
+                //checks conditions for transfer based on search parametres. I'd really love to be able to do local functions right now. SE doesn't accept net Core, only net Framework
+                var CrossCheck = initialSearchCheck(originLst.Item3, vfUseGlobalList);
+                if (CrossCheck.Count > 0)
                 {
-                    //Checks if this cargo has any item that we need to transfer. I'd really love to be able to do local functions right now. SE doesn't accept net Core, only net Framework
-                
-                                           
+                    foreach(var destiLst in destinationLstLst)
+                    {
+                        //condition to continue is having free space over 200. It's only enough to fit a few ores. No point bothering because of that
+                        if (destiLst.Item2 > 200)   
+                        {
+                            //compares each line to the list of intended transfers and if its a match, attemtps to transfer it
+                            //WIP - It's best if I have another list of matches Ex: this mat is in ID(01, 05, 06)
+                        }
+                    }
                     //WIP this is starting to get a little complicated. Maybe it's best if I start making this particular function by the end result functions, and not the process order
 
 

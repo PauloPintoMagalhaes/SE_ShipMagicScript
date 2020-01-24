@@ -19,12 +19,14 @@ using VRageMath;
 
 namespace IngameScript
 {
-    partial class Ship_Main
+    partial class Ship_Main :MyGridProgram
     {
         //It's a complete exageration to make a class just for this, but heck, I AM trying to make a program for dummies
         public class transferClass 
         {
             //I will never understand why Keen Software had to make a variable number for this! What's wrong with float? I can't even do basic math with MyFixedPoint!!!!
+            //It's bad enough they have their own version of the Tuple
+
             //This list decided which items you want to automatically pull to your ship IF, there is space or connection available.
             private Dictionary<string, MyFixedPoint> EasyList = new Dictionary<string, MyFixedPoint> { 
                 //Components

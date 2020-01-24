@@ -29,7 +29,8 @@ namespace IngameScript
                 public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
                 //After this misbegotten list, there are only two possible conclusions: Either I'm a complete moron, or I'm a genius. Edit: given on how this didn't explode in my face, I'll go with genius, for now
                 public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList = new List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>>();
-
+                //This list the inventory ID's where all the items of a certain type are stored. Made this to accelerate the search speed and code simplicity of the transfer functions
+                public List<MyTuple<string, string, List<long>>> MaterialCheck = new List<MyTuple<string, string, List<long>>>();
                 public individualCargo()
                 {
                     MaterialList.Clear();
@@ -62,12 +63,18 @@ namespace IngameScript
 
                     }
                     //if type is empty it means we're just marking the id and free space in the list. No need to update the quantity of an item that does not exist
-                    if (vfType != "") { addQuantities(vfSubType, vfType, (float)vfQuant); }
+                    if (vfType != "") { 
+                        addQuantities(vfSubType, vfType, (float)vfQuant);
+                        addCheck(vfSubType, vfType, vfID);
+                    }
+
                 }
                 //adds items to the quantity list in a controlled fashion. Serves for printing info
                 public void addQuantities(string vfSubType, string vfType, float vfQuantity)
                 {
-                    int vlIndex = MaterialQuantity.FindIndex(a => a.Item1 == vfType && a.Item2 == vfSubType); // Checks if it does have that type, otherwise no point in continuing
+                    int vlIndex = MaterialQuantity.FindIndex(a => a.Item1 == vfType && a.Item2 == vfSubType); 
+                    // Checks if it does have that type, otherwise no point in continuing
+                    //Also, we must ensure there is only one single combination of vfType and vfSubtype
                     if (vlIndex >= 0)
                     {
                         //Found the item in question. increment
@@ -80,6 +87,27 @@ namespace IngameScript
                         MaterialQuantity.Add(MyTuple.Create(vfType, vfSubType, vfQuantity));
                     }
                 }
+                public void addCheck(string  vfSubType, string vfType, long vfID)
+                {
+                    List<long> vlID_List = new List<long> ();
+                    int vlIndex = MaterialCheck.FindIndex(a => a.Item1 == vfType && a.Item2 == vfSubType);
+                    // Checks if it does have that type, otherwise no point in continuing
+                    //Also, we must ensure there is only one single combination of vfType and vfSubtype
+                    if (vlIndex >= 0)
+                    {
+                        //Found the item in question.
+                        vlID_List = MaterialCheck[vlIndex].Item3;
+                        vlID_List.Add(vfID);    //adds the new ID
+                        MaterialCheck[vlIndex] = MyTuple.Create(MaterialCheck[vlIndex].Item1, MaterialCheck[vlIndex].Item2, vlID_List); //Replaces it on the list
+
+                    }
+                    else //returns -1 if not found
+                    {
+                        //Didn't find the item in question. adds
+                        vlID_List.Add(vfID);    //adds the new ID
+                        MaterialCheck.Add(MyTuple.Create(vfType, vfSubType, vlID_List));
+                    }
+                }
             }
 
             //Declare initial variables. Note that refineries and assemblies don't need this flag because they'll be managed in another way
@@ -90,13 +118,14 @@ namespace IngameScript
             private individualCargo cargoLst = new individualCargo();
 
             //Define encapsulation variables to prevent users from messing with the information
+            //(A bit trivial for this script, since the info is rewritten before executing anything significant, but it's good practice)
             public MyFixedPoint CurrentVolume { get { return __currentVolume; } }
             public MyFixedPoint TotalVolume { get { return __totalVolume; } }
             public float Racio { get { return __CargoRacio; } }
             public int Count { get { return __count; } }
             public List<MyTuple<string, string, float>> MaterialQuantity { get { return cargoLst.MaterialQuantity; } }
             public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList { get { return cargoLst.MaterialList; } }
-
+            public List<MyTuple<string, string, List<long>>> MaterialCheck { get { return cargoLst.MaterialCheck; } }
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
@@ -172,6 +201,7 @@ namespace IngameScript
                     if (vfCargo is IMyRefinery || vfCargo is IMyAssembler) { index = 1; }
                     else { index = 0; }
                     IMyInventory vlInventory = vfCargo.GetInventory(index);
+                    vlInventory.
                     __totalVolume += vlInventory.MaxVolume;
                     __currentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;

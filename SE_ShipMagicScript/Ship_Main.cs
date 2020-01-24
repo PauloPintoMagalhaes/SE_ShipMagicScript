@@ -75,8 +75,7 @@ namespace IngameScript
         //determines SE code type from a list of more reader friendly codes
         public string cToSE_Type(string vfNormal_Type)
         {
-            string vlSE_Type = "";
-
+            string vlSE_Type;
             if (vfNormal_Type == "Ores") { vlSE_Type = "MyObjectBuilder_Ore"; }
             else if (vfNormal_Type == "Ingots") { vlSE_Type = "MyObjectBuilder_Ingot"; }
             else if (vfNormal_Type == "Components") { vlSE_Type = "MyObjectBuilder_Component"; }
@@ -85,15 +84,14 @@ namespace IngameScript
             else if (vfNormal_Type == "O2Bottles") { vlSE_Type = "MyObjectBuilder_OxygenContainerObject"; }
             else if (vfNormal_Type == "H2Bottles") { vlSE_Type = "MyObjectBuilder_GasContainerObject"; }
             else if (vfNormal_Type == "Consumables") { vlSE_Type = "MyObjectBuilder_ConsumableItem"; }
-            else { vfNormal_Type = ""; }
-
+            else { vlSE_Type = ""; }
             return vlSE_Type;
         }
 
         //converts a game subtype to a more understandable, printable name
         public string cFromSE_Key(string SE_SubType, string SE_Type)
         {
-            string nonSE_Name = "";
+            string nonSE_Name;
             //Don't know who had the bright idea to name different items with the same subtype. Makes things unnecessarily hard
             if (SE_Type == "MyObjectBuilder_Ore" || SE_Type == "MyObjectBuilder_Ingot")
             {
@@ -277,7 +275,7 @@ namespace IngameScript
             return vlCargoList;
         }
 
-        private List<IMyTerminalBlock> cargoType_Facility(string blockType = "All", IMyTerminalBlock vfConnetor = null)
+        private List<IMyTerminalBlock> cargoType_Facility(IMyTerminalBlock vfConnetor, string blockType = "All")
         {
             //This exists only to give the main ship something to throw its items at. 
             var vlCargoList = new List<IMyTerminalBlock>();
@@ -405,8 +403,21 @@ namespace IngameScript
 
 
         //transfering functions/methods . 
+        private List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> trimByType (List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOld, string vfType)
+        {
+            List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vlNewList = null;
+            List<MyTuple<string, string, MyFixedPoint, int>> vlSubList = null;
+            foreach (var listLine in vfOld)
+            {
+                //id and freespace do not concern us here. we only check if type exists and if so, create list with it
+                vlSubList = listLine.Item3.FindAll(a => a.Item1 == cToSE_Type(vfType));
+                vlNewList.Add(MyTuple.Create(listLine.Item1, listLine.Item2, vlSubList));
+            }
+
+            return vlNewList;
+        }
         //Filtered so it only tries to do anything if it's connected somewhere else and that else is something that can receive items
-        private void drainAllOfType(cargoClass[] data, string vfType)
+        private void drainAllOfType(cargoClass[] data, string vfType = "All", bool vfOrganize = true)
         {
             if (data != null && isConnected())
             {
@@ -415,87 +426,136 @@ namespace IngameScript
                 foreach (cargoClass innerCargo in data)
                 {
                     //Drains this type of item to indicated cargo
-                    //searchThroughLists(innerList, externalList, Type, SubType);   
-                    //search in innerList to send to externalList items of Type and SubType (No types mean all items) 
-                    searchThroughLists(innerCargo.MaterialList, externalCargo.MaterialList);
+                    if (innerCargo.MaterialList.Count > 0)
+                    {
+                        //filters innerCargo.MaterialList of indicated vfType
+                        var vlFiltered = (vfType == "All") ? innerCargo.MaterialList : trimByType(innerCargo.MaterialList, vfType); 
+                        //search in innerList to send to externalList, decide if you send to the fist available cargo vfFirstFree or if 
+                        //you first try to find a cargo with that same type of mats), provide a custom list
+                        searchThroughLists(vlFiltered, externalCargo.MaterialList, vfOrganize);
+                    }
                 }
             }
         }
 
-        private void fillWithAllOfType(cargoClass[] data, string vfType)
+        private void fillWithAllOfType(cargoClass[] data, string vfType, bool vfOrganize = true)
         {
             if (data != null && isConnected())
             {
                 List<IMyTerminalBlock> vlExternal = cargoType_Connected(getExernalConnector());
                 foreach (cargoClass item in data)
                 {
-                    //item.fillWithAllOfType(cToSE_Type(vfType), vlExternal);
                     //???? WIP
                 }
             }
         }
 
-        private void fillWithList(cargoClass[] data)
+        private void fillWithList(cargoClass[] data, bool vfOrganize = true)
         {
             if (data != null && isConnected())
             {
+                //I'm pondering the benefits of making this a statit class, even though it's "bad manners"
                 transferClass vlList = new transferClass();
                 //Filter the dictionary to remove values <= 0
-                vlList.trimTransferList();  //by default, trims zero and negative values. To change this, vlList.SetToTrimZeroes = False, then TrimTransfer List
+                vlList.trimTransferList();  //by default, trims zero and negative values. 
+                //To change this, vlList.SetToTrimZeroes = False and/or vlList.SetToTrimNegatives = False, and only then vlList.TrimTransfer List
 
                 //Filter dictionary to remove items that are already inside the ship
                 foreach (cargoClass innerCargo in data)
                 {
-                    //innerCargo.MaterialQuantity
-                    //vlList.updateTransferList();
-                    //???? WIP
+                    vlList.updateTransferList(innerCargo.MaterialQuantity);
+                }
+                //No point in searching or transfering anything if the transfer list is empty.
+                //If this happens it either means the user messed up or the ship already has every listed item
+                if (vlList.TransferList.Count > 0 && vlList.TransferList.Any(a=> a.Item3 > 0)) {
+                    IMyTerminalBlock vlReferenceConn = getExernalConnector();   //gets a reference connector block to determine which grid it belongs to
+                    //Search for external cargo
+                    cargoClass externalCargo = new cargoClass();
+                    externalCargo.getCargo(cargoType_Connected(vlReferenceConn));
+                    //adds facility cargos to the mix. Note that in this mode you should only be allowed to take items from inventory(1) which corresponds to processed materials
+                    externalCargo.getCargo(cargoType_Facility(vlReferenceConn));
+                    
+                    foreach (cargoClass innerCargo in data)
+                    {
+                        if (innerCargo.MaterialList.Count > 0)
+                        {
+                            //search in externalCargo to send to innerCargo, decide if you send to the fist available cargo vfFirstFree or if 
+                            //you first try to find a cargo with that same type of mats), provide a custom list
+                            searchThroughLists(externalCargo.MaterialList, innerCargo.MaterialList, vfOrganize, vlList.TransferList);
+                        }
+                    }
                 }
             }
         }
 
-        private void searchThroughLists(List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOrigList, List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfDestinList, bool vfFirstFree = false, bool vfUseGlobalList = false)
+        private List<MyTuple<string, string, MyFixedPoint, int>> searchConditions( List<MyTuple<string, string, MyFixedPoint, int>> vfOrigList, List<MyTuple<string, string, float>> vfUseGlobalList)
+        {
+            List<MyTuple<string, string, MyFixedPoint, int>> vlFound = null; 
+            //checks if the cargo being searched has any of the intended items
+            if (vfUseGlobalList == null && vfOrigList != null) 
+            {
+                //If there is no specific search and origin has items to pick, then its a go for transfer
+                vlFound = vfOrigList;
+            }
+            else if(vfUseGlobalList != null && vfOrigList != null)
+            {
+                //If there is a specific search and origin has items to pick, then lets search
+                foreach (var originLine in vfOrigList)
+                {
+                    //if the item in the list, find everyone and passes the item location to 
+                    var vlLine = vfUseGlobalList.Find(a=> a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
+                    if (vlLine.)
+                    {
+
+                    }
+                    
+                }
+            }
+            return vlFound;
+        }
+
+        private void searchThroughLists(List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOrigList, List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfDestinList, bool vfOrganize = true, List<MyTuple<string, string, float>> vfUseGlobalList = null)
         {
             //We're going to have to change these lists, so we parse them here. We don't need to change anything in the class itself because the next cycle of the programming block will update the info anyway
             var originLstLst = vfOrigList; 
             var destinationLstLst = vfDestinList;
             int vlOrigIndex = 0;
-            int vlDestIndex = 0;
-            int vlItemIndex = 0;
+            //int vlDestIndex = 0;
+            //int vlItemIndex = 0;
 
             //Honestly, this is the part that I dislike the most
             foreach (var originLst in originLstLst)
             {
-                //skips empty lists
-                if (originLst.Item3 != null)
+                //checks conditions for transfer based on search parametres
+                if (searchConditions(originLst.Item3, vfUseGlobalList).Count > 0)
                 {
-                    foreach (var originLine in originLst.Item3)
-                    {
-                        //Else, if it found something, verify each of its items and attempts to find a match on the other list
-                        if (!vfFirstFree)
-                        {
-                            //Cycles through the list in search of any item of the following category
-                            foreach (var destinationLst in destinationLstLst)
-                            {
-                                if (destinationLst.Item3 != null)
-                                {
-                                    //skips empty lists
-                                    vlItemIndex = destinationLst.Item3.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
-                                    if (vlItemIndex >= 0) // Checks if it does have that type, otherwise no point in continuing  
-                                    {
-                                        //We found an item to transfer. From here, we need the following information.
-                                        //ID of the block to where it is now, ID of the block to receive it, inventory position where the item is now.
-                                        var vlItemsTransfered = attemptItemTransfer(originLst.Item1, destinationLst.Item1, originLst.Item3[vlItemIndex].Item4);
-                                        //???? WIP
-                                    }
-                                }
-                            }
-                            vlDestIndex++;
-                        }
-                        else
-                        {
-                            //If found none or vfFirstFree is true, push it into the first available space
-                        }
-                    }
+                    //Checks if this cargo has any item that we need to transfer. I'd really love to be able to do local functions right now. SE doesn't accept net Core, only net Framework
+                
+                                           
+                    //WIP this is starting to get a little complicated. Maybe it's best if I start making this particular function by the end result functions, and not the process order
+
+
+                    //    //Else, if it found something, verify each of its items and attempts to find a match on the other list
+                    //    if (!vfOrganize)
+                    //    {
+                    //        //Cycles through the list in search of any item of the following category
+                    //        foreach (var destinationLst in destinationLstLst)
+                    //        {
+                    //            if (destinationLst.Item3 != null)
+                    //            {
+                    //                //skips empty lists
+                    //                vlItemIndex = destinationLst.Item3.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
+                    //                if (vlItemIndex >= 0) // Checks if it does have that type, otherwise no point in continuing  
+                    //                {
+                    //                    //We found an item to transfer. From here, we need the following information.
+                    //                    //ID of the block to where it is now, ID of the block to receive it, inventory position where the item is now.
+                    //                    var vlItemsTransfered = attemptItemTransfer(originLst.Item1, destinationLst.Item1, originLst.Item3[vlItemIndex].Item4);
+                    //                    //???? WIP
+                    //                }
+                    //            }
+                    //        }
+                    //        vlDestIndex++;
+                    //    }
                 }
                 vlOrigIndex++;
             }

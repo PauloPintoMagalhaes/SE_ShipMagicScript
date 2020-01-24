@@ -83,7 +83,7 @@ namespace IngameScript
             }
 
             //Declare initial variables. Note that refineries and assemblies don't need this flag because they'll be managed in another way
-            private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector, isFacility = false;
+            private bool impCargo, impReactor, impGenerator, impDrill, impWelder, impGrinder, impConnector, impRefinery, impAssembly = false;
             private MyFixedPoint __currentVolume, __totalVolume = 0;
             private float __CargoRacio = 0;
             private int __count = 0;
@@ -101,7 +101,7 @@ namespace IngameScript
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
             {
-                impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false; isFacility = false;
+                impCargo = false; impReactor = false; impGenerator = false; impDrill = false; impWelder = false; impGrinder = false; impConnector = false; impRefinery = false; impAssembly = false;
                 __currentVolume = 0; __totalVolume = 0; __CargoRacio = 0; __count = 0;
             }
 
@@ -143,6 +143,8 @@ namespace IngameScript
                 else if (vfBlock == typeof(IMyShipGrinder) && impGrinder) { vlTMP = true; }
                 else if (vfBlock == typeof(IMyReactor) && impReactor) { vlTMP = true; }
                 else if (vfBlock == typeof(IMyGasGenerator) && impGenerator) { vlTMP = true; }
+                else if (vfBlock == typeof(IMyRefinery) && impRefinery) { vlTMP = true; }
+                else if (vfBlock == typeof(IMyAssembler) && impAssembly) { vlTMP = true; }
                 return vlTMP;
             }
 
@@ -156,6 +158,8 @@ namespace IngameScript
                 else if (vfBlock == typeof(IMyShipGrinder)) { impGrinder = true; }
                 else if (vfBlock == typeof(IMyReactor)) { impReactor = true; }
                 else if (vfBlock == typeof(IMyGasGenerator)) { impGenerator = true; }
+                else if (vfBlock == typeof(IMyRefinery) && impRefinery) { impRefinery = true; }
+                else if (vfBlock == typeof(IMyAssembler) && impAssembly) { impAssembly = true; }
             }
 
             //Cycles through the inventory to catalog the requested items
@@ -163,7 +167,11 @@ namespace IngameScript
             {
                 if ((vfCargo.IsFunctional))
                 {
-                    IMyInventory vlInventory = vfCargo.GetInventory(0);
+                    //Items in facilities can only be listed and accessed in general functions at their proccessed items inventory. Don't touch the raw stuff
+                    int index;
+                    if (vfCargo is IMyRefinery || vfCargo is IMyAssembler) { index = 1; }
+                    else { index = 0; }
+                    IMyInventory vlInventory = vfCargo.GetInventory(index);
                     __totalVolume += vlInventory.MaxVolume;
                     __currentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;

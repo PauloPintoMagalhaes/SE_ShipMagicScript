@@ -21,7 +21,12 @@ namespace IngameScript
 {
     partial class Ship_Main
     {
-        //Takes information about batteries, their status and 
+        //Placeholder class, for now. Needs to:
+        //-calculate grid battery status like available energy %
+        //-calculate average expected battery duration
+        //-control battery mode according to situation (Auto when ship is on, recharge when it's off and has solar panels available, etc)
+        //-check for movable solar panels and move them to maximize solar energy capture
+        //-should not automatically activate hydrogen engines (those are for emergencies only[burns through ice storage like a 8 year old through candy])
         public class energyClass
         {
 

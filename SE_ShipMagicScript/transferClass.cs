@@ -60,7 +60,6 @@ namespace IngameScript
                 get { return __TransferList[viIndex].Item3; }
                 set
                 {
-                    var vlLine = value;
                     //removes the value already in the ship from the list and if it's zero or below, removes it from the list
                     if ((value == 0 && SetToTrimZeroes) || ( value < 0 && SetToTrimNegatives))
                     {
@@ -73,8 +72,8 @@ namespace IngameScript
                 }
             }
             //Better to provide the entire list to allow a "foreach" cycle and change the single value it corresponds to. Probably cleaner
-            public List<MyTuple<string, string, float>> TransferList { get { return __TransferList; } }
-
+            public List<MyTuple<string, string, float>> TransferList { get { return __TransferList; } set { __TransferList = value; } }
+            //Initially I made this without a get, but there are ocasions where I want to replace this with an existing MaterialQuantity from cargoClass
 
             public transferClass()
             {
@@ -87,29 +86,35 @@ namespace IngameScript
                 //no point in cycling through it if there's no trimming to do
                 if (SetToTrimZeroes || SetToTrimNegatives)
                 {
-                    //foreach (var line in __transferMats) { if ((line.Value == 0 && SetToTrimZeroes) || (line.Value < 0 && SetToTrimNegatives)) { __transferMats.Remove(line.Key); } }
+                    foreach(var line in __TransferList)
+                    {
+                        //searches through the list and, according to filtering, removes the offending lines
+                        if ((line.Item3 == 0 && SetToTrimZeroes) || (line.Item3 < 0 && SetToTrimNegatives)) { __TransferList.Remove(line); }
+                    }
                 }
             }
             
             //Takes a list with the current item quantity in a ship and subtracts them from the list of items that you want to transfer
             //this way, you guarantee that you'll only transfer items that are still missing or lacking
-            public void updateTransferList(Dictionary<string, MyFixedPoint> vfList)
+            public void updateTransferList(List<MyTuple<string, string, float>> vfExistingList)
             {
-                foreach (var line in EasyList)
+                int vlIndexTrsf = 0;
+                int vlIndexExist = 0;
+                //__TransferList is the one in charge of this process. It matters not if vfExistingList has more items than indicated
+                foreach (var trsf in __TransferList)
                 {
-                    //???? WIP - Arrange this function to subtract vfList to __TransferList and remove zeroes and negative values, if flagged as such
-                    
-                    //takes the transfer list and compares it to the cargo list
-                    if (vfList.ContainsKey(line.Key))
+                    //If there are 
+                    vlIndexExist = vfExistingList.FindIndex(a => a.Item1 == trsf.Item1 && a.Item2 == trsf.Item2);
+                    if(vlIndexExist >= 0)
                     {
-                        //removes the value already in the ship from the list and if it's zero or below, removes it from the list
-                        if ((line.Value - vfList[line.Key] == 0 && SetToTrimZeroes) || (line.Value - vfList[line.Key] < 0 && SetToTrimNegatives))
+                        //checks configured filtering types and if they are in conditions to be removed, removes them, else, updates the transfer list value
+                        if ((__TransferList[vlIndexTrsf].Item3 - vfExistingList[vlIndexExist].Item3 == 0 && SetToTrimZeroes) || (__TransferList[vlIndexTrsf].Item3 - vfExistingList[vlIndexExist].Item3 < 0 && SetToTrimNegatives))
                         {
-                            //__transferMats.Remove(line.Key);    //no point cycling through this anymore
+                            __TransferList.RemoveAt(vlIndexTrsf);
                         }
                         else
                         {
-                            //__transferMats[line.Key] = line.Value - vfList[line.Key];   //updates the value to what we actually need to tranfer
+                            __TransferList[vlIndexTrsf] = MyTuple.Create(__TransferList[vlIndexTrsf].Item1, __TransferList[vlIndexTrsf].Item2, __TransferList[vlIndexTrsf].Item3 - vfExistingList[vlIndexExist].Item3);
                         }
                     }
                 }
@@ -117,7 +122,7 @@ namespace IngameScript
 
 
             //Maybe I'm dumb, but I'm sure there's a way to get that public cToSE_Key from Ship_Main. It's giving me an error, so until I figure why, I have to repeat code
-            public List<string> cToSE_Key(string thisItem)
+            private List<string> cToSE_Key(string thisItem)
             {
                 //Some new items may be missing
                 string[] components = new string[]{"Construction", "MetalGrid", "InteriorPlate", "SteelPlate", "Girder", "SmallTube", "LargeTube", "Motor", "Display", "Glass",
@@ -169,14 +174,14 @@ namespace IngameScript
             private void cToDict_trsf()
             {
                 __TransferList.Clear();
-                List<string> vlKeys = new List<string>();
-                MyTuple<string, string, float> vlNewLine = new MyTuple<string, string, float>();
-
+                List<string> vlKeys;
+                MyTuple<string, string, float> vlNewLine; ;
+                //cycles through every item in the user friendly list and transforms it into the METAL HARDCORE MEGA TUPLE LIST that we'll use to easily compare items with
                 foreach (var line in EasyList)
                 {
-                    vlKeys = cToSE_Key(line.Key);
+                    vlKeys = cToSE_Key(line.Key);   //converts the user friendly name to Type and SubType directly understood by the SE functions
                     vlNewLine = MyTuple.Create(vlKeys[0], vlKeys[1], (float)line.Value);
-                    __TransferList.Add(vlNewLine);
+                    __TransferList.Add(vlNewLine);  //Adds the converted line to the transfer list
                 }
             }
         }

@@ -21,7 +21,15 @@ namespace IngameScript
 {
     partial class Ship_Main
     {
-        //Manages refineries and assemblies, and prevents them from stopping production due to "clogging"
+        //Placeholder class, for now. Needs to:
+        //-receive data from refinery and assembly
+        //-prevent them from stopping production due to "clogging"
+        //  *Empty end product inventory when over a certain % of space taken
+        //  *Empty and refill raw product inventory according to certain specifications when its over a certain % and
+        //      there are other raw materials available to refine/construct. This way there will always be a variety of available items
+        //-print production lists into an LCD, if present
+        //-control conveyor systems to prevent facilities from pulling items. Their control should only be carried out by this script
+
         public class facilitiesClass 
         {
             cargoClass Cargo = new cargoClass();

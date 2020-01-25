@@ -181,7 +181,13 @@ namespace IngameScript
                 //cycles through every item in the user friendly list and transforms it into the METAL HARDCORE MEGA TUPLE LIST that we'll use to easily compare items with
                 foreach (var line in EasyList)
                 {
-                    vlKeys = cToSE_Key(line.Key);   //converts the user friendly name to Type and SubType directly understood by the SE functions
+                    /* The more I read Keen Software's documentation the more im convinced the guys were on drugs when they decided the item catalog system.
+                    MyObjectBuilder_PhysicalGunObject/RapidFireAutomaticRifleItem, for example is the full string that defines an inventory item... this is 71 characters meaning 71bytes
+                    Now multiply this for 100 inventories each with 20 types (or more) of items and we have 142mb of memory per second being wasted just for storing inventory data
+                    Now, if it was me, I'd do something like 1 character for type and numeric 0-255 (game has 100, tops, items at the moment). this means 2 bytes and provide a function to convert the codes to string
+                    exclusively for when you want to print into an LCD. The only reason why I don't apply that right here is because the SE system does NOT work like that and I
+                    don't see the point in saving memory storage just to burn it in CPU everytime I cycle throught the cargo search methods.*/
+                    vlKeys = cToSE_Key(line.Key);   //converts the user friendly name to Type and SubType directly understood by the SE functions.  
                     vlNewLine = MyTuple.Create(vlKeys[0], vlKeys[1], (float)line.Value);
                     __TransferList.Add(vlNewLine);  //Adds the converted line to the transfer list
                 }

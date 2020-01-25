@@ -28,7 +28,7 @@ namespace IngameScript
                 //Declare initial variables. Lists are proving to be more versatile than common arrays. Note: this is the reasonable way out. See edit below
                 public List<MyTuple<string, string, float>> MaterialQuantity = new List<MyTuple<string, string, float>>();
                 //After this misbegotten list, there are only two possible conclusions: Either I'm a complete moron, or I'm a genius. Edit: given on how this didn't explode in my face, I'll go with genius, for now
-                public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList = new List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>>();
+                public List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> MaterialList = new List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>>();
                 //This list the inventory ID's where all the items of a certain type are stored. Made this to accelerate the search speed and code simplicity of the transfer functions
                 public List<MyTuple<string, string, List<long>>> MaterialCheck = new List<MyTuple<string, string, List<long>>>();
                 public individualCargo()
@@ -40,28 +40,11 @@ namespace IngameScript
                 //adds items to the cargo list in a controlled fashion. Serves for transfering
                 public void addItem(long vfID, MyFixedPoint vfFreespace, string vfType, string vfSubType, MyFixedPoint vfQuant, int vfPos)
                 {
-                    // MaterialList index has to correspond with ID index and FreeVolume index. This way, ID[10] corresponds to the FreeSpace[10] and the MaterialList[10]
-                    //To achieve this, items can only be added in this method.
-                    MyTuple<string, string, MyFixedPoint, int> vlNewMats = new MyTuple<string, string, MyFixedPoint, int>(vfType, vfSubType, vfQuant, vfPos);
-                    var vlListLine = new List<MyTuple<string, string, MyFixedPoint, int>>();   //creates empty list
+                    /*I have tried to make a tuple list within a tuple list to save memory and spare repeated IDs and Freespaces, but the search for items became
+                    too complex and cumbersome. I will get the wasted memory back in CPU power and ease of programming and usage, so it's fine, I suppose*/ 
                     //check if id in question exists.
-                    int vlIndex = MaterialList.FindIndex(a => a.Item1 == vfID);
-                    if (vlIndex >= 0)
-                    {
-                        //Contains ID , so updates the current list within a list
-                        vlListLine = MaterialList[vlIndex].Item3;
-                        vlListLine.Add(vlNewMats);  //Adds a new line of materials to this ID list
-                        var vlNewLine = MyTuple.Create(MaterialList[vlIndex].Item1, MaterialList[vlIndex].Item2, vlListLine);   //Creates a new line of list
-                        MaterialList[vlIndex] = vlNewLine;  //off with the old, on with the new
-                    }
-                    else
-                    {
-                        //Could not find the ID. Add new one, even if empty
-                        vlListLine.Add(vlNewMats);   //adds the found mats
-                        var vlNewLine = MyTuple.Create(vfID, vfFreespace, vlListLine);   //Creates a new line of list
-                        MaterialList.Add(vlNewLine);
+                    MaterialList.Add(MyTuple.Create(vfID, vfFreespace, vfType, vfSubType, vfQuant, vfPos));
 
-                    }
                     //if type is empty it means we're just marking the id and free space in the list. No need to update the quantity of an item that does not exist
                     if (vfType != "") { 
                         addQuantities(vfSubType, vfType, (float)vfQuant);
@@ -124,8 +107,9 @@ namespace IngameScript
             public float Racio { get { return __CargoRacio; } }
             public int Count { get { return __count; } }
             public List<MyTuple<string, string, float>> MaterialQuantity { get { return cargoLst.MaterialQuantity; } }
-            public List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> MaterialList { get { return cargoLst.MaterialList; } }
-            public List<MyTuple<string, string, List<long>>> MaterialCheck { get { return cargoLst.MaterialCheck; } }
+            public List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> MaterialList { get { return cargoLst.MaterialList; } }
+
+            public List<string> TEST = new List<string>();
 
             //Don't actually need a constructor in this case, but use it to guarantee the values are reinitialized to avoid data contamination
             public cargoClass()
@@ -201,13 +185,11 @@ namespace IngameScript
                     if (vfCargo is IMyRefinery || vfCargo is IMyAssembler) { index = 1; }
                     else { index = 0; }
                     IMyInventory vlInventory = vfCargo.GetInventory(index);
-                    vlInventory.
                     __totalVolume += vlInventory.MaxVolume;
                     __currentVolume += vlInventory.CurrentVolume;
                     MyFixedPoint vlFreeSpace = vlInventory.MaxVolume - vlInventory.CurrentVolume;
                     __count++;
                     var vlItemLst = fillListFromInventory(vlInventory);
-
                     //each vlI corresponds to a slot in the inventory. items may be divided into different stacks 
                     //despite being the same component type and subtype
 
@@ -216,6 +198,9 @@ namespace IngameScript
                         //check if the item in question is within the search parametres
                         if (foundItemInInventory(vlItemLst[vlI], vfType, vfSubType))
                         {
+                            TEST.Add(vlItemLst[vlI].Type.ToString());
+                            //The way 6 is ridiculous. To directly compare if the itemlist has an item, I have to construct an entire IMyInventoryItem type.
+                            //I can't compare it with a simple item ID, which is STUPID! Instead I have to make the following 
                             cargoLst.addItem(vfCargo.GetId(), vlFreeSpace, vlItemLst[vlI].Type.TypeId.ToString(), vlItemLst[vlI].Type.SubtypeId.ToString(), vlItemLst[vlI].Amount, vlI);
                         }
                         else

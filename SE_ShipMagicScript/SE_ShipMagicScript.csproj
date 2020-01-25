@@ -39,7 +39,6 @@
   <Import Project="MDK/MDK.paths.props" Condition="exists('MDK/MDK.paths.props')" />
   <ItemGroup>
     <Compile Include="cargoClass.cs" />
-    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="transferClass.cs" />
     <Compile Include="energyClass.cs" />
     <Compile Include="facilitiesClass.cs" />

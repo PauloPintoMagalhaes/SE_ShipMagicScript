@@ -385,14 +385,17 @@ namespace IngameScript
             }
         }
 
-        private void printCustomMsg(string vfLCD_Name)
+        private void printCustomMsg(string vfLCD_Name, List<string> vfTest)
         {
             IMyTextPanel vlLCD = GridTerminalSystem.GetBlockWithName(vfLCD_Name) as IMyTextPanel;
             if (vlLCD != null)
             {
                 string vlMSG = "";
                 //build custom message here
-
+                foreach(string line in vfTest)
+                {
+                    vlMSG += line + "\n";
+                }
 
 
                 //print message
@@ -403,19 +406,14 @@ namespace IngameScript
 
 
         //transfering functions/methods . 
-        private List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> trimByType (List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOld, string vfType)
+        private List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> trimByType (List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> vfOld, string vfType)
         {
-            List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vlNewList = new List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>>();
-            List<MyTuple<string, string, MyFixedPoint, int>> vlSubList =new  List<MyTuple<string, string, MyFixedPoint, int>>();
-            foreach (var listLine in vfOld)
-            {
-                //id and freespace do not concern us here. we only check if type exists and if so, create list with it
-                vlSubList = listLine.Item3.FindAll(a => a.Item1 == cToSE_Type(vfType));
-                vlNewList.Add(MyTuple.Create(listLine.Item1, listLine.Item2, vlSubList));
-            }
-
+            List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> vlNewList = new List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>>();
+            //id and freespace do not concern us here. we only check if type exists and if so, create list with it
+            vlNewList = vfOld.FindAll(a => a.Item3 == vfType);
             return vlNewList;
         }
+
         //Filtered so it only tries to do anything if it's connected somewhere else and that else is something that can receive items
         private void drainAllOfType(cargoClass[] data, string vfType = "All", bool vfOrganize = true)
         {
@@ -511,64 +509,110 @@ namespace IngameScript
         }
 
         //I'd really like to have this function on the transferClass, but I can't seem to make GridTerminalSystem functions work outside here =(
-        private void searchThroughLists(List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfOrigList, List<MyTuple<long, MyFixedPoint, List<MyTuple<string, string, MyFixedPoint, int>>>> vfDestinList, bool vfOrganize = true, List<MyTuple<string, string, float>> vfUseGlobalList = null)
+        private void searchThroughLists(List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> vfOrigList, List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> vfDestinList, bool vfOrganize = true, List<MyTuple<string, string, float>> vfUseGlobalList = null)
         {
             //We're going to have to change these lists, so we parse them here. We don't need to change anything in the class itself because the next cycle of the programming block will update the info anyway
-            var originLstLst = vfOrigList; 
             var destinationLstLst = vfDestinList;   //originLstLst because its a list within a list, wheel within wheels, plans withing plans, schemes within schemes
-            int vlOrigIndex = 0;
-            //int vlDestIndex = 0;
-            //int vlItemIndex = 0;
+            var vlShopList = vfUseGlobalList;
+            MyFixedPoint vlMinFreeSpace = 200;
+            float vlNewValue;
+            bool vlPutAnywhere = false;
+            var vlDestLst = new List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>>();
+            int vlShopIndex = 0;
 
-            //Honestly, this is the part that I dislike the most
-            foreach (var originLst in originLstLst)
+            //Honestly, this is the part that I dislike the most. Hopefully, with the changes I made recently, this will become simpler
+            foreach (var originLst in vfOrigList)
             {
-                //checks conditions for transfer based on search parametres. I'd really love to be able to do local functions right now. SE doesn't accept net Core, only net Framework
-                var CrossCheck = initialSearchCheck(originLst.Item3, vfUseGlobalList);
-                if (CrossCheck.Count > 0)
+                vlShopIndex = vlShopList.FindIndex(a => a.Item1 == originLst.Item3 && a.Item2 == originLst.Item4);
+                //checks if this item is marked for transfer
+                if (vlShopList.Count > 0 || vlShopIndex >= 0)
                 {
-                    foreach(var destiLst in destinationLstLst)
-                    {
-                        //condition to continue is having free space over 200. It's only enough to fit a few ores. No point bothering because of that
-                        if (destiLst.Item2 > 200)   
+                    //Found the offending item and so, we must exile it beyond our fair ship nation!
+                    if(vfOrganize){
+                        //verify if there is a place with the same item subtype and freepace to receive it
+                        vlDestLst = destinationLstLst.FindAll(a => a.Item3 == originLst.Item3 && a.Item4 == originLst.Item4 && a.Item2 > vlMinFreeSpace);
+                        if (vlDestLst.Count >= 0)
                         {
-                            //compares each line to the list of intended transfers and if its a match, attemtps to transfer it
-                            //WIP - It's best if I have another list of matches Ex: this mat is in ID(01, 05, 06)
+                            vlNewValue = orderTransferCycle(originLst, vlDestLst, vlShopList[vlShopIndex].Item3);
+                            if (vlNewValue == 0)
+                            {   //transfered all there was
+                                vlShopList.RemoveAt(vlShopIndex);
+                                continue;
+                            }
+                            else
+                            {
+                                //updates relevant values and tries in the next search type
+                                vlShopList[vlShopIndex] = MyTuple.Create(vlShopList[vlShopIndex].Item1, vlShopList[vlShopIndex].Item2, vlNewValue);
+                            }
+                        }
+                        vlDestLst = destinationLstLst.FindAll(a => a.Item3 == originLst.Item3 && a.Item2 > vlMinFreeSpace);
+                        if (vlDestLst.Count >= 0)
+                        {
+                            vlNewValue = orderTransferCycle(originLst, vlDestLst, vlShopList[vlShopIndex].Item3);
+                            if (vlNewValue == 0)
+                            {   //transfered all there was
+                                vlShopList.RemoveAt(vlShopIndex);
+                                continue;
+                            }
+                            else
+                            {
+                                //updates relevant values and tries in the next search type
+                                vlShopList[vlShopIndex] = MyTuple.Create(vlShopList[vlShopIndex].Item1, vlShopList[vlShopIndex].Item2, vlNewValue);
+                            }
+                        }
+                        //if we did not find a space to put it in a controled fashion, we place it anywhere it can fit
+                        vlPutAnywhere = true;
+                    }
+                    if(!vfOrganize || vlPutAnywhere)
+                    {
+                        if (vlPutAnywhere) { vlPutAnywhere = false; }
+                        vlDestLst = destinationLstLst.FindAll(a => a.Item2 > vlMinFreeSpace);
+                        if (vlDestLst.Count >= 0)
+                        {
+                            //No organization required. Find an inventory with freespace and shove it there
+                            vlNewValue = orderTransferCycle(originLst, vlDestLst, vlShopList[vlShopIndex].Item3);
+                            if (vlNewValue == 0)
+                            {   //transfered all there was
+                                vlShopList.RemoveAt(vlShopIndex);
+                                continue;
+                            }
+                            else
+                            {
+                                //No point in updating anymore because there's no more space anywhere, exit cycle
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            //if there is no free space anywhere, break out of the search cycle because there's no point in searching
+                            break;
                         }
                     }
-                    //WIP this is starting to get a little complicated. Maybe it's best if I start making this particular function by the end result functions, and not the process order
-
-
-                    //    //Else, if it found something, verify each of its items and attempts to find a match on the other list
-                    //    if (!vfOrganize)
-                    //    {
-                    //        //Cycles through the list in search of any item of the following category
-                    //        foreach (var destinationLst in destinationLstLst)
-                    //        {
-                    //            if (destinationLst.Item3 != null)
-                    //            {
-                    //                //skips empty lists
-                    //                vlItemIndex = destinationLst.Item3.FindIndex(a => a.Item1 == originLine.Item1 && a.Item2 == originLine.Item2);
-                    //                if (vlItemIndex >= 0) // Checks if it does have that type, otherwise no point in continuing  
-                    //                {
-                    //                    //We found an item to transfer. From here, we need the following information.
-                    //                    //ID of the block to where it is now, ID of the block to receive it, inventory position where the item is now.
-                    //                    var vlItemsTransfered = attemptItemTransfer(originLst.Item1, destinationLst.Item1, originLst.Item3[vlItemIndex].Item4);
-                    //                    //???? WIP
-                    //                }
-                    //            }
-                    //        }
-                    //        vlDestIndex++;
-                    //    }
                 }
-                vlOrigIndex++;
             }
         }
 
-        //attempts to transfer vfQuantity of an item from vfOrigin in position vfPos and send it to vfDestination
-        private MyFixedPoint attemptItemTransfer(long vfOriginID, long vfDestinID, int vfPos, float vfQuantity = 0)
+        //Cycles through an available lists until the order is complete or fails
+        private float orderTransferCycle(MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int> vfOrigList, List<MyTuple<long, MyFixedPoint, string, string, MyFixedPoint, int>> vfDestinList, float vfQuant)
         {
-            MyFixedPoint vlTMP = 0;
+            float vlNewValue=0;
+            float vlTMP=0;
+            foreach (var destLine in vfDestinList)
+            {
+                //attempts to transfer and returns the ammount transfered.
+                vlTMP = vfQuant - orderItemTransfer(vfOrigList.Item1, vfOrigList.Item6, destLine.Item1, vfQuant, destLine.Item2, false);
+                if(vlTMP <= 0)  { vlNewValue = 0; break;  }
+                else { vlNewValue = vlTMP; }
+            }
+            return vlNewValue;
+        }
+
+        //attempts to transfer vfQuantity of an item from vfOrigin in position vfPos and send it to vfDestination
+        private float orderItemTransfer(long vfOriginID, int vfOriginPos, long vfDestinID,  float vfQuant, MyFixedPoint vfFreeSpace, bool vfAglutinate = false)
+        {
+            //This sucks because, since I can't calculate with MyFixedPoint, I have to convert it for calculation, then reconvert it back as the new value 
+            //the list should have after the transfer
+            float vlTMP = 0;
             IMyInventory vlOrigin = GridTerminalSystem.GetBlockWithId(vfOriginID).GetInventory(0);
             //???? WIP
 
@@ -592,15 +636,17 @@ namespace IngameScript
             cargoClass vlTool = new cargoClass();
             vlTool.getCargo(cargoType("Drill"));
 
+            printCustomMsg("LCD", vlCargo.TEST);
+
             //Print remaining Info
             //printItemType("Name of LCD", Cargo Variable, Type (see list below), text begins with (use if you want to mark the following print with something), keep old text, Items per line);
             //Ores, Ingots, Components, Tools, Ammo, O2Bottles, H2Bottles, Consumablers 
-            printItemType("LCD", vlCargo, "Ores", "Cargo\n", false, 3);   //Prints in screen named "LCD" the list or Ores contained in vlCargo, starts with "Cargo" in a single line and devides the list in 3 items per line
-            cargoClass[] cargoPack = { vlCargo, vlTool };
-            printCargoPercentage("LCD", cargoPack, "PC\n", true, 1);
+            //printItemType("LCD", vlCargo, "Ores", "Cargo\n", false, 3);   //Prints in screen named "LCD" the list or Ores contained in vlCargo, starts with "Cargo" in a single line and devides the list in 3 items per line
+            //cargoClass[] cargoPack = { vlCargo, vlTool };
+            //printCargoPercentage("LCD", cargoPack, "PC\n", true, 1);
 
             //drain all Items of X type from the selected group of cargo to whatever ship you are connected to. Empty type drains all types
-            drainAllOfType(cargoPack, "Ores");  //Note that if you add reactors and O2 generators, they will be emptied as well.
+            //drainAllOfType(cargoPack, "Ores");  //Note that if you add reactors and O2 generators, they will be emptied as well.
             //Fill current ship with the 
         }
     }

@@ -198,7 +198,6 @@ namespace IngameScript
                         //check if the item in question is within the search parametres
                         if (foundItemInInventory(vlItemLst[vlI], vfType, vfSubType))
                         {
-                            TEST.Add(vlItemLst[vlI].Type.ToString());
                             //The way 6 is ridiculous. To directly compare if the itemlist has an item, I have to construct an entire IMyInventoryItem type.
                             //I can't compare it with a simple item ID, which is STUPID! Instead I have to make the following 
                             cargoLst.addItem(vfCargo.GetId(), vlFreeSpace, vlItemLst[vlI].Type.TypeId.ToString(), vlItemLst[vlI].Type.SubtypeId.ToString(), vlItemLst[vlI].Amount, vlI);
@@ -212,7 +211,7 @@ namespace IngameScript
                 }
             }
 
-            //auxiliary function to skil a boring step from the process of declaring the inventory lists
+            //auxiliary function to skil a boring step from the process of declar  ing the inventory lists
             private List<MyInventoryItem> fillListFromInventory(IMyInventory vfCargo)
             {
                 List<MyInventoryItem> itemInv = new List<MyInventoryItem>();

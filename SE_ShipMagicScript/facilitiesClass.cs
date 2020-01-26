@@ -29,7 +29,7 @@ namespace IngameScript
         //      there are other raw materials available to refine/construct. This way there will always be a variety of available items
         //-print production lists into an LCD, if present
         //-control conveyor systems to prevent facilities from pulling items. Their control should only be carried out by this script
-
+        //-scrap should always have full priority in refining (because it refines stupidly fast and it ocupies more space)
         public class facilitiesClass 
         {
             public cargoClass Cargo = new cargoClass();

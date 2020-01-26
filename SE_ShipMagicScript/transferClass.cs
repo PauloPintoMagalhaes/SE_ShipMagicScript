@@ -30,13 +30,13 @@ namespace IngameScript
             //This list decided which items you want to automatically pull to your ship IF, there is space or connection available.
             private Dictionary<string, MyFixedPoint> EasyList = new Dictionary<string, MyFixedPoint> { 
                 //Components
-			    {"Construction", 10000}, {"MetalGrid", 2000}, {"InteriorPlate", 10000}, {"SteelPlate", 10000},
+			    {"Construction", 10000}, {"MetalGrid", 2000}, {"InteriorPlate", 10000}, {"SteelPlate", 10000}, 
                 {"Girder", 2000}, {"SmallTube", 10000}, {"LargeTube", 2000}, {"Motor", 3000}, {"Display", 500}, {"Glass", 5000},
                 {"Superconductor", 500}, {"Computer", 3000}, {"Reactor", 2000}, {"Thrust", 2000}, {"GravityGen", 1000}, {"Medical", 500},
                 {"RadioComm", 300}, {"Detector", 300}, {"Explosives", 300}, {"SolarCell", 3000}, {"PowerCell", 3000}, 
 			    //Ores
 			    {"Ice", 0}, {"Stone", 0}, {"Gold Ore", 0}, {"Iron Ore", 0}, {"Silver Ore", 0}, {"Cobalt Ore", 0}, {"Nickel Ore", 0},
-                {"Silicon Ore", 0}, {"Platinum Ore", 0}, {"Magnesium Ore", 0}, {"Gravel", 0}, {"Uranium Ore", 0},
+                {"Silicon Ore", 0}, {"Platinum Ore", 0}, {"Magnesium Ore", 0}, {"Gravel", 0}, {"Uranium Ore", 0}, {"Organic", 0},
                 //Ingots 
                 {"Gold Ingot", 0}, {"Silver Ingot", 0}, {"Nickel Ingot", 0}, {"Uranium Ingot", 0},
                 {"Iron Ingot", 0}, {"Silicon Ingot", 0}, {"Platinum Ingot", 0}, {"Magnesium Ingot", 0}, 
@@ -44,11 +44,13 @@ namespace IngameScript
 			    {"Drill",  0}, {"Drill2", 0}, {"Drill3", 0}, {"Drill4", 0},
                 {"Welder", 0}, {"Welder2", 0}, {"Welder3", 0}, {"Welder4", 0},
                 {"Grinder", 0}, {"Grinder2", 0}, {"Grinder3", 0}, {"Grinder4", 0},
-                {"OxygenBottle", 0}, {"HydrogenBottle", 0}, 
+                {"O2Bottle", 0}, {"H2Bottle", 0}, 
 			    //Ammo
 			    {"Missile", 0}, {"Ammo045mm", 0}, {"Ammo184mm", 0},
                 //Consumables
-                {"ClangCola", 0}
+                {"ClangCola", 0}, {"Coffee", 0}, {"MedKit", 0}, {"Powerkit", 0 }, 
+                //Datapads and Packages (no idea how to get these)
+                 {"Datapad", 0}, {"Package", 0 }
             };
             private List<MyTuple<string, string, float>> __TransferList = new List<MyTuple<string, string, float>>();
             //No point in encapsulating these.
@@ -129,10 +131,11 @@ namespace IngameScript
                 //Some new items may be missing
                 string[] components = new string[]{"Construction", "MetalGrid", "InteriorPlate", "SteelPlate", "Girder", "SmallTube", "LargeTube", "Motor", "Display", "Glass",
                 "Superconductor", "Computer", "Reactor", "Thrust", "GravityGen", "Medical", "RadioComm", "Detector", "Explosives", "SolarCell", "PowerCell"};
-                string[] ores = new string[] { "Ice", "Stone", "Gold Ore", "Iron Ore", "Silver Ore", "Cobalt Ore", "Nickel Ore", "Uranium Ore", "Silicon Ore", "Platinum Ore", "Magnesium Ore" };
+                string[] ores = new string[] { "Ice", "Stone", "Gold Ore", "Iron Ore", "Silver Ore", "Cobalt Ore", "Nickel Ore", "Uranium Ore", "Silicon Ore", "Platinum Ore", "Magnesium Ore", "Organic"};
                 string[] ingots = new string[] { "Gravel", "Gold Ingot", "Silver Ingot", "Nickel Ingot", "Iron Ingot", "Silicon Ingot", "Platinum Ingot", "Magnesium Ingot" };
                 string[] tools = new string[] { "Drill", "Drill2", "Drill3", "Drill4", "WelderI", "WelderI2", "WelderI3", "WelderI4", "Grinder", "Grinder2", "Grinder3", "Grinder4" };
                 string[] ammo = new string[] { "Missile", "Ammo045mm", "Ammo184mm" };
+                string[] consumables = new string[] { "Medkit", "Powerkit", "CosmicCoffee", "ClangCola", "Powerkit" };
                 string SE_Type = "";
                 string SE_SubType = "";
                 //Determines Type
@@ -141,9 +144,11 @@ namespace IngameScript
                 else if (ingots.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ingot"; }
                 else if (tools.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_PhysicalGunObject"; }
                 else if (ammo.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_AmmoMagazine"; }
+                else if (consumables.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_ConsumableItem"; }
                 else if (thisItem == "OxygenBottle") { SE_Type = "MyObjectBuilder_OxygenContainerObject"; }
                 else if (thisItem == "HydrogenBottle") { SE_Type = "MyObjectBuilder_GasContainerObject"; }
-                else if (thisItem == "ClankCola") { SE_Type = "MyObjectBuilder_ConsumableItem"; }
+                else if (thisItem == "Package") { SE_Type = "MyObjectBuilder_Package"; }
+                else if (thisItem == "Datapad") { SE_Type = "MyObjectBuilder_Datapad"; }
                 else { SE_Type = ""; }
                 //Determines SubType
                 if (thisItem == "Glass") { SE_SubType = "BulletproofGlass"; }
@@ -161,11 +166,19 @@ namespace IngameScript
                 else if (thisItem == "Grinder2") { SE_SubType = "AngleGrinder2Item"; }
                 else if (thisItem == "Grinder3") { SE_SubType = "AngleGrinder3Item"; }
                 else if (thisItem == "Grinder4") { SE_SubType = "AngleGrinder4Item"; }
-                else if (thisItem == "OxygenBottle") { SE_SubType = "OxygenContainerObject"; }
-                else if (thisItem == "HydrogenBottle") { SE_SubType = "GasContainerObject"; }
+                else if (thisItem == "O2Bottle") { SE_SubType = "OxygenContainerObject"; }
+                else if (thisItem == "H2Bottle") { SE_SubType = "GasContainerObject"; }
                 else if (thisItem == "Missile") { SE_SubType = "Missile200mm"; }
                 else if (thisItem == "Ammo045mm") { SE_SubType = "NATO_5p56x45mm"; }
                 else if (thisItem == "Ammo184mm") { SE_SubType = "NATO_25x184mm"; }
+                else if (thisItem == "Canvas") { SE_SubType = "Canvas"; }
+                else if (thisItem == "ZoneChip") { SE_SubType = "ZoneChip"; }
+                else if (thisItem == "Package") { SE_SubType = "Package"; }
+                else if (thisItem == "Datapad") { SE_SubType = "Datapad"; }
+                else if (thisItem == "Medkit") { SE_SubType = "Medkit"; }
+                else if (thisItem == "Coffee") { SE_SubType = "CosmicCoffee"; }
+                else if (thisItem == "ClangCola") { SE_SubType = "ClangCola"; }
+                else if (thisItem == "Powerkit") { SE_SubType = "Powerkit"; }
                 else if (thisItem.Contains(" ")) { SE_SubType = null; }
                 else { SE_SubType = thisItem; }
 

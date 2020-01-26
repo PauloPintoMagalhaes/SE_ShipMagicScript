@@ -24,66 +24,18 @@ namespace IngameScript
         //string conversions From and To SE Type and SubType codes to userfriendly terms
         //This function is not very well made, but it worked on a previous version of the code and I'm too tired to
         //"pimp" it up now. 
-        public List<string> cToSE_Key(string thisItem)
-        {
-            //Some new items may be missing
-            string[] components = new string[]{"Construction", "MetalGrid", "InteriorPlate", "SteelPlate", "Girder", "SmallTube", "LargeTube", "Motor", "Display", "Glass",
-                "Superconductor", "Computer", "Reactor", "Thrust", "GravityGen", "Medical", "RadioComm", "Detector", "Explosives", "SolarCell", "PowerCell"};
-            string[] ores = new string[] { "Ice", "Stone", "Gold Ore", "Iron Ore", "Silver Ore", "Cobalt Ore", "Nickel Ore", "Uranium Ore", "Silicon Ore", "Platinum Ore", "Magnesium Ore" };
-            string[] ingots = new string[] { "Gravel", "Gold Ingot", "Silver Ingot", "Nickel Ingot", "Iron Ingot", "Silicon Ingot", "Platinum Ingot", "Magnesium Ingot" };
-            string[] tools = new string[] { "Drill", "Drill2", "Drill3", "Drill4", "WelderI", "WelderI2", "WelderI3", "WelderI4", "Grinder", "Grinder2", "Grinder3", "Grinder4" };
-            string[] ammo = new string[] { "Missile", "Ammo045mm", "Ammo184mm" };
-            string SE_Type = "";
-            string SE_SubType = "";
-            //Determines Type
-            if (components.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Component"; }
-            else if (ores.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ore"; }
-            else if (ingots.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_Ingot"; }
-            else if (tools.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_PhysicalGunObject"; }
-            else if (ammo.Any(thisItem.Contains)) { SE_Type = "MyObjectBuilder_AmmoMagazine"; }
-            else if (thisItem == "OxygenBottle") { SE_Type = "MyObjectBuilder_OxygenContainerObject"; }
-            else if (thisItem == "HydrogenBottle") { SE_Type = "MyObjectBuilder_GasContainerObject"; }
-            else if (thisItem == "ClankCola") { SE_Type = "MyObjectBuilder_ConsumableItem"; }
-            else { SE_Type = ""; }
-            //Determines SubType
-            if (thisItem == "Glass") { SE_SubType = "BulletproofGlass"; }
-            else if (thisItem == "GravityGen") { SE_SubType = "GravityGenerator"; }
-            else if (thisItem == "RadioComm") { SE_SubType = "RadioCommunication"; }
-            else if (thisItem == "Drill") { SE_SubType = "HandDrillItem"; }
-            else if (thisItem == "Drill2") { SE_SubType = "HandDrill2Item"; }
-            else if (thisItem == "Drill3") { SE_SubType = "HandDrill3Item"; }
-            else if (thisItem == "Drill4") { SE_SubType = "HandDrill4Item"; }
-            else if (thisItem == "Welder") { SE_SubType = "WelderItem"; }
-            else if (thisItem == "Welder2") { SE_SubType = "Welder2Item"; }
-            else if (thisItem == "Welder3") { SE_SubType = "Welder3Item"; }
-            else if (thisItem == "Welder4") { SE_SubType = "Welder4Item"; }
-            else if (thisItem == "Grinder") { SE_SubType = "AngleGrinderItem"; }
-            else if (thisItem == "Grinder2") { SE_SubType = "AngleGrinder2Item"; }
-            else if (thisItem == "Grinder3") { SE_SubType = "AngleGrinder3Item"; }
-            else if (thisItem == "Grinder4") { SE_SubType = "AngleGrinder4Item"; }
-            else if (thisItem == "OxygenBottle") { SE_SubType = "OxygenContainerObject"; }
-            else if (thisItem == "HydrogenBottle") { SE_SubType = "GasContainerObject"; }
-            else if (thisItem == "Missile") { SE_SubType = "Missile200mm"; }
-            else if (thisItem == "Ammo045mm") { SE_SubType = "NATO_5p56x45mm"; }
-            else if (thisItem == "Ammo184mm") { SE_SubType = "NATO_25x184mm"; }
-            else if (thisItem.Contains(" ")) { SE_SubType = null; }
-            else { SE_SubType = thisItem; }
-
-            return new List<string> { SE_Type, SE_SubType };
-        }
-
         //determines SE code type from a list of more reader friendly codes
-        public string cToSE_Type(string vfNormal_Type)
+        public string cToSE_Type(string vfUser_Type)
         {
             string vlSE_Type;
-            if (vfNormal_Type == "Ores") { vlSE_Type = "MyObjectBuilder_Ore"; }
-            else if (vfNormal_Type == "Ingots") { vlSE_Type = "MyObjectBuilder_Ingot"; }
-            else if (vfNormal_Type == "Components") { vlSE_Type = "MyObjectBuilder_Component"; }
-            else if (vfNormal_Type == "Tools") { vlSE_Type = "MyObjectBuilder_PhysicalGunObject"; }
-            else if (vfNormal_Type == "Ammo") { vlSE_Type = "MyObjectBuilder_AmmoMagazine"; }
-            else if (vfNormal_Type == "O2Bottles") { vlSE_Type = "MyObjectBuilder_OxygenContainerObject"; }
-            else if (vfNormal_Type == "H2Bottles") { vlSE_Type = "MyObjectBuilder_GasContainerObject"; }
-            else if (vfNormal_Type == "Consumables") { vlSE_Type = "MyObjectBuilder_ConsumableItem"; }
+            if (vfUser_Type == "Ores") { vlSE_Type = "MyObjectBuilder_Ore"; }
+            else if (vfUser_Type == "Ingots") { vlSE_Type = "MyObjectBuilder_Ingot"; }
+            else if (vfUser_Type == "Components") { vlSE_Type = "MyObjectBuilder_Component"; }
+            else if (vfUser_Type == "Tools") { vlSE_Type = "MyObjectBuilder_PhysicalGunObject"; }
+            else if (vfUser_Type == "Ammo") { vlSE_Type = "MyObjectBuilder_AmmoMagazine"; }
+            else if (vfUser_Type == "O2Bottles") { vlSE_Type = "MyObjectBuilder_OxygenContainerObject"; }
+            else if (vfUser_Type == "H2Bottles") { vlSE_Type = "MyObjectBuilder_GasContainerObject"; }
+            else if (vfUser_Type == "Consumables") { vlSE_Type = "MyObjectBuilder_ConsumableItem"; }
             else { vlSE_Type = ""; }
             return vlSE_Type;
         }
@@ -95,9 +47,9 @@ namespace IngameScript
             //Don't know who had the bright idea to name different items with the same subtype. Makes things unnecessarily hard
             if (SE_Type == "MyObjectBuilder_Ore" || SE_Type == "MyObjectBuilder_Ingot")
             {
-                if (SE_SubType == "Ice" || SE_SubType == "Stone" || SE_SubType == "Gravel")
+                if (SE_SubType == "Ice" || SE_SubType == "Stone" || SE_SubType == "Gravel" || SE_SubType == "Organic")
                 {
-                    nonSE_Name = "MyObjectBuilder_Ore";
+                    nonSE_Name = SE_SubType;
                 }
                 else
                 {
@@ -126,16 +78,89 @@ namespace IngameScript
                 else if (SE_SubType == "AngleGrinder2Item") { nonSE_Name = "Grinder2"; }
                 else if (SE_SubType == "AngleGrinder3Item") { nonSE_Name = "Grinder3"; }
                 else if (SE_SubType == "AngleGrinder4Item") { nonSE_Name = "Grinder4"; }
-                else if (SE_SubType == "OxygenContainerObject") { nonSE_Name = "OxygenBottle"; }
-                else if (SE_SubType == "GasContainerObject") { nonSE_Name = "HydrogenBottle"; }
+                else if (SE_SubType == "OxygenContainerObject") { nonSE_Name = "O2Bottle"; }
+                else if (SE_SubType == "GasContainerObject") { nonSE_Name = "H2Bottle"; }
                 else if (SE_SubType == "Missile200mm") { nonSE_Name = "Missile200mm"; }
-                else if (SE_SubType == "NATO_5p56x45mm") { nonSE_Name = "NATO_5p56x45mm"; }
-                else if (SE_SubType == "NATO_25x184mm") { nonSE_Name = "NATO_25x184mm"; }
+                else if (SE_SubType == "NATO_5p56x45mm") { nonSE_Name = "Ammo045mm"; }
+                else if (SE_SubType == "NATO_25x184mm") { nonSE_Name = "Ammo184mm"; }
+                else if (SE_SubType == "Canvas") { nonSE_Name = "Canvas"; }
+                else if (SE_SubType == "ZoneChip") { nonSE_Name = "ZoneChip"; }
+                else if (SE_SubType == "Package") { nonSE_Name = "Package"; }
+                else if (SE_SubType == "Datapad") { nonSE_Name = "Datapad"; }
+                else if (SE_SubType == "Medkit") { nonSE_Name = "Medkit"; }
+                else if (SE_SubType == "CosmicCoffee") { nonSE_Name = "Coffee"; }
+                else if (SE_SubType == "ClangCola") { nonSE_Name = "ClangCola"; }
+                else if (SE_SubType == "Powerkit") { nonSE_Name = "Powerkit"; }
                 else { nonSE_Name = SE_SubType; }
             }
             return nonSE_Name;
         }
 
+        //verifies item volume
+        public float cVolume(string SE_Type, string SE_SubType)
+        {
+            float vlVolume = 0;
+            if (SE_Type == "MyObjectBuilder_Ore")
+            {
+                vlVolume = (SE_SubType == "Scrap" || SE_SubType ==  "OldScrap") ? 0.254f : 0.37f;
+                //Ores (including organic) all have the same volume except for scrap
+            }
+            else if (SE_Type == "MyObjectBuilder_Ingot")
+            {
+                if (SE_SubType == "Gold") { vlVolume = 0.052f; }
+                else if (SE_SubType == "Silver") { vlVolume = 0.10f; }
+                else if (SE_SubType == "Nickel" || SE_SubType == "Cobalt" || SE_SubType == "Uranium") { vlVolume = 0.11f; }
+                else if (SE_SubType == "Iron") { vlVolume = 0.13f; }
+                else if (SE_SubType == "Silicon") { vlVolume = 0.43f; }
+                else if (SE_SubType == "Platinum") { vlVolume = 0.5f; }
+                else if (SE_SubType == "Magnesium") { vlVolume = 0.58f; }
+                else if (SE_SubType == "Scrap") { vlVolume = 0.254f; }
+            }
+            else if (SE_Type == "MyObjectBuilder_Component")
+            {
+                if (SE_SubType == "Computer") { vlVolume = 1; }
+                else if (SE_SubType == "Explosives" || SE_SubType == "Construction" || SE_SubType == "Girder" || SE_SubType == "SmallTube") { vlVolume = 2; }
+                else if (SE_SubType == "SteelPlate") { vlVolume = 3; }
+                else if (SE_SubType == "InteriorPlate") { vlVolume = 5; }
+                else if (SE_SubType == "Display" || SE_SubType == "Detector") { vlVolume = 6; }
+                else if (SE_SubType == "Motor" || SE_SubType == "BulletproofGlass" || SE_SubType == "Superconductor" || SE_SubType == "Reactor") { vlVolume = 8; }
+                else if (SE_SubType == "Thrust") { vlVolume = 10; }
+                else if (SE_SubType == "MetalGrid") { vlVolume = 15; }
+                else if (SE_SubType == "SolarCell") { vlVolume = 20; }
+                else if (SE_SubType == "LargeTube") { vlVolume = 38; }
+                else if (SE_SubType == "PowerCell") { vlVolume = 45; }
+                else if (SE_SubType == "RadioCommunication") { vlVolume = 140; }
+                else if (SE_SubType == "Medical") { vlVolume = 160; }
+                else if (SE_SubType == "GravityGenerator") { vlVolume = 200; }
+                else if (SE_SubType == "Canvas") { vlVolume = 8; }
+                else if (SE_SubType == "ZoneChip") { vlVolume = 0.2f; }
+            }
+            else if (SE_Type == "MyObjectBuilder_PhysicalGunObject")
+            {
+                if (SE_SubType == "HandDrillItem" || SE_SubType == "HandDrill2Item" || SE_SubType == "HandDrill3Item" || SE_SubType == "HandDrill4Item") { vlVolume = 120; }
+                else if (SE_SubType == "WelderItem" || SE_SubType == "Welder2Item" || SE_SubType == "Welder3Item" || SE_SubType == "Welder4Item") { vlVolume = 8; }
+                else if (SE_SubType == "AngleGrinderItem" || SE_SubType == "AngleGrinder2Item" || SE_SubType == "AngleGrinder3Item" || SE_SubType == "AngleGrinder4Item") { vlVolume = 20; }
+            }
+            else if (SE_Type == "MyObjectBuilder_AmmoMagazine")
+            {
+                if (SE_SubType == "Missile") { vlVolume = 60; }
+                else if (SE_SubType == "Ammo045mm") { vlVolume = 0.2f; }
+                else if (SE_SubType == "Ammo184mm") { vlVolume = 16; }
+            }
+            else if (SE_Type == "MyObjectBuilder_OxygenContainerObject" || SE_Type == "MyObjectBuilder_GasContainerObject") { vlVolume = 120; }
+            else if (SE_Type == "MyObjectBuilder_ConsumableItem") 
+            {
+                if (SE_SubType == "Medkit") { vlVolume = 12; }
+                else if (SE_SubType == "Powerkit") { vlVolume = 9; }
+                else if (SE_SubType == "CosmicCoffee") { vlVolume = 1; }
+                else if (SE_SubType == "ClangCola") { vlVolume = 1; }
+            }
+            else if (SE_Type == "MyObjectBuilder_Package") { vlVolume = 125; }
+            else if (SE_Type == "MyObjectBuilder_Datapad") { vlVolume = 0.4f; }
+
+            return vlVolume;
+        }
+        
 
         //Methods to determine grid wonership and blocksearch filtering by grid
         //Determines whether a block belongs to the same grid as the programming block calling it or not
@@ -415,7 +440,7 @@ namespace IngameScript
         }
 
         //Filtered so it only tries to do anything if it's connected somewhere else and that else is something that can receive items
-        private void drainAllOfType(cargoClass[] data, string vfType = "All", bool vfOrganize = true)
+        private void drainAllOfType(cargoClass[] data, string vfType, bool vfOrganize = true)
         {
             if (data != null && isConnected())
             {
@@ -433,6 +458,7 @@ namespace IngameScript
                         searchThroughLists(vlFiltered, externalCargo.MaterialList, vfOrganize);
                     }
                 }
+                //WIP need to force the facility management of the externalcargo to check for raw materials to pull to production queue
             }
         }
 
@@ -611,14 +637,50 @@ namespace IngameScript
         private float orderItemTransfer(long vfOriginID, int vfOriginPos, long vfDestinID,  float vfQuant, MyFixedPoint vfFreeSpace, bool vfAglutinate = false)
         {
             //This sucks because, since I can't calculate with MyFixedPoint, I have to convert it for calculation, then reconvert it back as the new value 
-            //the list should have after the transfer
+            //the list should have after the transfer. I need to translate it into a float because the base unit is in the thousands, which is fine for roleplay, but a bit silly programwise
             float vlTMP = 0;
-            IMyInventory vlOrigin = GridTerminalSystem.GetBlockWithId(vfOriginID).GetInventory(0);
+            //Set inventory where the items originate from
+            IMyTerminalBlock vlBlock = GridTerminalSystem.GetBlockWithId(vfOriginID);
+            IMyInventory vlOrigin;
+            vlOrigin = (vlBlock is IMyRefinery || vlBlock is IMyRefinery) ? vlBlock.GetInventory(1) : vlBlock.GetInventory(0);
+            //Set inventory where the items will be going to from
+            vlBlock = GridTerminalSystem.GetBlockWithId(vfDestinID);
+            IMyInventory vlDestin;
+            vlDestin = (vlBlock is IMyRefinery || vlBlock is IMyRefinery) ? vlBlock.GetInventory(1) : vlBlock.GetInventory(0);
+            //Inventories are established. Now calculate how much of the item we can transfer. 
+            /*PM: Keen software fails again by not having an indivivual volume property. Will have to calculate it by hand, so now I'me facing another
+            hard decision; do I open another itemlist just to search for the item in question to verify the volume and quantity, or do I add a column in
+            cargoClass that includes item volume, total stack volume, or both? 
+            Decision: I'm goint to assume its best to convert when transfer is needed than to convert everysingle item of every single inventory*/
+            var vlItem = vlOrigin.GetItemAt(vfOriginPos);
+            var vlStackVolume = (float)vlItem.Value.Amount * cVolume(vlItem.Value.Type.SubtypeId.ToString(), vlItem.Value.Type.TypeId.ToString());
+
+            //destInv.TransferItemFrom(sourceInv, 0, stackIfPossible: true, amount: transferAmount)
             //???? WIP
 
             return vlTMP;
         }
 
+        private string filterType(string[] vfMainArg, string vfTypeSearch)
+        {
+            var search = "";
+            if (vfTypeSearch != "Drain_Type" && vfTypeSearch != "Fill_Type") { search = null; } //For safety, if no correct command is found, do nothing
+            else
+            {
+                //Splits the command to discover what type of drain/fill we're using
+                string[] vlSplit = vfMainArg[Array.IndexOf(vfMainArg, vfTypeSearch)].Split(':');
+                if (vlSplit.Length <= 1) { search = "All"; }
+                else 
+                {
+                    if (vlSplit[1] != "Ore" && vlSplit[1] != "Component" && vlSplit[1] != "Tool" && vlSplit[1] != "Ingot" && vlSplit[1] != "Consumable")
+                    {
+                        search = null;
+                    }
+                    else { search = vlSplit[1]; }
+                }
+            } 
+            return search;
+        }
 
 
         //Main function... where the party starts and ends
@@ -638,15 +700,42 @@ namespace IngameScript
 
             printCustomMsg("LCD", vlCargo.TEST);
 
+
+            //argument controls what the script is supposed to do upon that particular control.
+            string[] vlOrders = argument.Split(' '); //seperates the argument into several commands divided by a space
+            if (vlOrders.Length > 0) {
+                if (vlOrders.Contains("Drain_Type"))
+                {
+                    cargoClass[] cargoPack = { vlCargo, vlTool };
+                    //drain all Items of X type from the selected group of cargo to whatever ship you are connected to. Empty type drains all types
+                    drainAllOfType(cargoPack, "Ores");  //Note that if you add reactors and O2 generators, they will be emptied as well.
+                }
+                if (vlOrders.Contains("Fill_Type"))
+                {
+                    cargoClass[] cargoPack = { vlCargo, vlTool };
+                    //verifies what type of item we're filling with
+                    var vlType = filterType(vlOrders, "Type_Fill");
+                    if (vlType != null) { fillWithAllOfType(cargoPack, vlType); }
+                }
+                if (vlOrders.Contains("Fill_List"))
+                {
+                    cargoClass[] cargoPack = { vlCargo, vlTool };
+                    //fills ship with materials until it fulfils. at least, the list in transferClass
+                    fillWithList(cargoPack);
+                }
+                if (vlOrders.Contains("Solar_Synch"))
+                {
+                    //begins the synchronization of the solar panel arrays (if they exist) 
+                    //PM: Have to find a way of seperating things into groups if I have more than one movable solar array
+
+                }
+            }
             //Print remaining Info
             //printItemType("Name of LCD", Cargo Variable, Type (see list below), text begins with (use if you want to mark the following print with something), keep old text, Items per line);
             //Ores, Ingots, Components, Tools, Ammo, O2Bottles, H2Bottles, Consumablers 
             //printItemType("LCD", vlCargo, "Ores", "Cargo\n", false, 3);   //Prints in screen named "LCD" the list or Ores contained in vlCargo, starts with "Cargo" in a single line and devides the list in 3 items per line
-            //cargoClass[] cargoPack = { vlCargo, vlTool };
             //printCargoPercentage("LCD", cargoPack, "PC\n", true, 1);
 
-            //drain all Items of X type from the selected group of cargo to whatever ship you are connected to. Empty type drains all types
-            //drainAllOfType(cargoPack, "Ores");  //Note that if you add reactors and O2 generators, they will be emptied as well.
             //Fill current ship with the 
         }
     }
